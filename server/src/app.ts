@@ -32,7 +32,7 @@ app.use(
 
 app.use(express.json());
 
-app.get("/api/health", (_req, res) => {
+app.get("/*", (_req, res) => {
 	res.json({ message: "Server is running" });
 });
 
