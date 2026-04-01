@@ -56,9 +56,9 @@ const Watchlist = () => {
         <div className="watchlist-grid">
           {watchlistItems.map((item) => (
             <div key={item._id} className="watchlist-item">
-              <h3>{item.mediaTitle}</h3>
+              <h3>{item.imdbID}</h3>
               <p>Status: {item.status}</p>
-              <p>Rating: {item.rating || 'Not rated'}</p>
+              <p>Rating: {item.userRating ?? 'Not rated'}</p>
             </div>
           ))}
         </div>

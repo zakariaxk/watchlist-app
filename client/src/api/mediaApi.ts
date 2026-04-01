@@ -25,6 +25,19 @@ export interface Media {
   imdbID: string;
   title: string;
   createdAt: string;
+  year?: string;
+  type?: string;
+  genres?: string[];
+  poster?: string;
+  description?: string;
+}
+
+export interface OmdbSearchResult {
+  imdbID: string;
+  title: string;
+  year: string;
+  type: string;
+  poster: string;
 }
 
 export interface WatchlistItem {
@@ -73,7 +86,7 @@ export const loginUser = (email: string, password: string) => {
 };
 
 export const searchMedia = (title: string) => {
-  return apiClient.get<{ results: { imdbID: string; title: string; year: string; type: string; poster: string }[] }>(`media/search?title=${encodeURIComponent(title)}`);
+  return apiClient.get<{ results: OmdbSearchResult[] }>(`media/search?title=${encodeURIComponent(title)}`);\n};
 };
 
 export const getMediaByImdbID = (imdbID: string) => {
