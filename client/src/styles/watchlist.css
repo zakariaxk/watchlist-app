@@ -35,20 +35,31 @@
   color: #333;
 }
 
-.watchlist-item p {
-  margin: 8px 0;
-  color: #666;
-  font-size: 14px;
+.status-container,
+.rating-container {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background-color: #e9ecef;
+.status-dropdown-badge {
+  padding: 4px 10px;
   border-radius: 20px;
-  font-size: 12px;
-  color: #495057;
-  margin-top: 10px;
+  border: none;
+  color: white;
+  font-weight: bold;
+  text-transform: capitalize;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+.rating-input {
+  width: 60px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }
 
 @media (max-width: 768px) {
