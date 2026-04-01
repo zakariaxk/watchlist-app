@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Watchlist from './pages/Watchlist';
 import MediaDetail from './pages/MediaDetail';
 import Search from './pages/Search';
+import Profile from './pages/Profile';
 import './styles/main.css';
 
 function App() {
@@ -29,6 +30,14 @@ function App() {
           />
           <Route path="/media/:id" element={<MediaDetail />} />
           <Route path="/search" element={<Search />} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </AuthProvider>

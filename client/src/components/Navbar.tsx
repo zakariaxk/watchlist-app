@@ -36,7 +36,10 @@ const Navbar = () => {
               <Link to="/search" className="nav-link">
                 Search
               </Link>
-              <span className="nav-user">Welcome, {user?.email}</span>
+              <Link to="/profile" className="nav-link">
+                Profile
+              </Link>
+              <span className="nav-user">Welcome, {user?.username}</span>
               <button onClick={handleLogout} className="nav-btn logout-btn">
                 Logout
               </button>

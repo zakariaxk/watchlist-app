@@ -19,14 +19,16 @@
 }
 
 .media-poster img {
-  width: 250px;
+  width: 100%;
+  max-width: 220px;
   height: auto;
   border-radius: 8px;
+  display: block;
 }
 
 .placeholder-poster {
-  width: 250px;
-  height: 350px;
+  width: 220px;
+  height: 310px;
   background-color: #e9ecef;
   display: flex;
   align-items: center;
@@ -72,6 +74,30 @@
   margin-top: 20px;
 }
 
+.watchlist-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.add-watchlist-btn {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 15px;
+}
+
+.add-watchlist-btn:hover {
+  background-color: #1e7e34;
+}
+
+.watchlist-feedback {
+  font-size: 14px;
+  color: #28a745;
+}
+
 .comments-section {
   background: white;
   padding: 30px;
@@ -115,6 +141,20 @@
   background-color: #0056b3;
 }
 
+.review-form-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.rating-input {
+  width: 140px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
 .comments-list {
   display: flex;
   flex-direction: column;
@@ -144,6 +184,75 @@
 
 .comment-rating {
   font-size: 12px;
+  color: #888;
+}
+
+.toggle-comments-btn {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+
+.toggle-comments-btn:hover {
+  color: #0056b3;
+}
+
+.review-comments {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f1f3f5;
+  border-radius: 4px;
+}
+
+.review-comment {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.rc-author {
+  font-weight: 700;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.rc-text {
+  color: #555;
+}
+
+.inline-comment-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.inline-comment-form input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.inline-comment-form button {
+  background-color: #007bff;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.inline-comment-form button:hover {
+  background-color: #0056b3;
+}
+
+.loading-small {
+  font-size: 13px;
   color: #888;
 }
 

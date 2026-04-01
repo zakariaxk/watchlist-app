@@ -35,6 +35,7 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 		});
 
 		await newReview.save();
+		await newReview.populate("userId", "username email");
 		res.status(201).json({ message: "Review added", data: newReview });
 	} catch (error) {
 		res.status(500).json({ message: "Failed to add review", error });

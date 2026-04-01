@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import jwt from "jsonwebtoken";
+import { authenticate, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -75,6 +76,41 @@ router.post("/login", async (req: Request, res: Response) => {
 	} catch (error) {
 		console.error("Login error:", error);
 		res.status(500).json({ message: "Login failed. Please try again." });
+	}
+});
+
+// Get current user profile
+router.get("/profile", authenticate, async (req: AuthRequest, res: Response) => {
+	try {
+		const user = await User.findById(req.user?.id).select("-passwordHash");
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+		res.status(200).json(user);
+	} catch (error) {
+		res.status(500).json({ message: "Failed to fetch profile" });
+	}
+});
+
+// Update profileVisibility
+router.patch("/profile", authenticate, async (req: AuthRequest, res: Response) => {
+	try {
+		const { profileVisibility } = req.body;
+		const valid = ["public", "private"];
+		if (!profileVisibility || !valid.includes(profileVisibility)) {
+			return res.status(400).json({ message: "profileVisibility must be 'public' or 'private'" });
+		}
+		const user = await User.findByIdAndUpdate(
+			req.user?.id,
+			{ profileVisibility },
+			{ new: true }
+		).select("-passwordHash");
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+		res.status(200).json({ message: "Profile updated", user });
+	} catch (error) {
+		res.status(500).json({ message: "Failed to update profile" });
 	}
 });
 

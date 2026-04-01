@@ -49,9 +49,14 @@ export interface WatchlistItem {
   dateAdded: string;
 }
 
+export interface ReviewAuthor {
+  _id: string;
+  username: string;
+}
+
 export interface Review {
   _id: string;
-  userId: string;
+  userId: ReviewAuthor | string;
   imdbID: string;
   reviewText: string;
   rating?: number;
@@ -61,8 +66,16 @@ export interface Review {
 export interface ReviewComment {
   _id: string;
   reviewId: string;
-  authorUserId: string;
+  authorUserId: ReviewAuthor | string;
   commentText: string;
+  createdAt: string;
+}
+
+export interface UserProfile {
+  _id: string;
+  username: string;
+  email: string;
+  profileVisibility: string;
   createdAt: string;
 }
 
@@ -114,7 +127,7 @@ export const getReviews = (imdbID: string) => {
 };
 
 export const addReview = (data: AddReviewPayload) => {
-  return apiClient.post<Review>('reviews', data);
+  return apiClient.post<{ message: string; data: Review }>('reviews', data);
 };
 
 export const getReviewComments = (reviewId: string) => {
@@ -122,5 +135,13 @@ export const getReviewComments = (reviewId: string) => {
 };
 
 export const addReviewComment = (data: AddReviewCommentPayload) => {
-  return apiClient.post<ReviewComment>('review-comments', data);
+  return apiClient.post<{ message: string; data: ReviewComment }>('review-comments', data);
+};
+
+export const getProfile = () => {
+  return apiClient.get<UserProfile>('auth/profile');
+};
+
+export const updateProfile = (data: { profileVisibility: string }) => {
+  return apiClient.patch<{ message: string; user: UserProfile }>('auth/profile', data);
 };
