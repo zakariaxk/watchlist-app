@@ -119,7 +119,6 @@ const MediaDetail = () => {
 };
 
 export default MediaDetail;
-  const context = useContext(AuthContext);
 
   if (!context) {
     return <div>Loading...</div>;
