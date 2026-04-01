@@ -86,7 +86,7 @@ export const loginUser = (email: string, password: string) => {
 };
 
 export const searchMedia = (title: string) => {
-  return apiClient.get<{ results: OmdbSearchResult[] }>(`media/search?title=${encodeURIComponent(title)}`);\n};
+  return apiClient.get<{ results: OmdbSearchResult[] }>(`media/search?title=${encodeURIComponent(title)}`);
 };
 
 export const getMediaByImdbID = (imdbID: string) => {
