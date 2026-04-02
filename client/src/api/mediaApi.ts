@@ -184,8 +184,6 @@ export const getReviewComments = (reviewId: string) => {
 export const addReviewComment = (data: AddReviewCommentPayload) => {
   return apiClient.post<{ message: string; data: ReviewComment }>('review-comments', data);
 };
-
-export interface RegisterPayload {
   username: string;
   email: string;
   password: string;
