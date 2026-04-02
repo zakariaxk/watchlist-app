@@ -7,6 +7,9 @@ export interface IUser extends mongoose.Document {
 	passwordHash: string;
 	profileVisibility: string;
 	createdAt: Date;
+	isVerified: boolean;
+	verificationToken: string;
+	VerificationTokenExpires: Date;
 	comparePassword(plaintext: string): Promise<boolean>;
 }
 
@@ -32,6 +35,16 @@ const userSchema = new mongoose.Schema(
 		profileVisibility: {
 			type: String,
 			default: "public",
+		},
+		isVerified: {
+			type: Boolean,
+			default: false,
+		},
+		verificationToken: {
+			type: String,
+		},
+		VerificationTokenExpires: {
+			type: Date,
 		},
 	},
 	{

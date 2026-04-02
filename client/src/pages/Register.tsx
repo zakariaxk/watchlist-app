@@ -47,9 +47,10 @@ const Register = () => {
     setLoading(true);
     try {
       const response = await registerUser(username, email, password);
-      const { user, token } = response.data;
-      login(user, token);
-      // Show tile selection step instead of immediately navigating away
+      // Note: With email verification, backend won't return token yet
+      // const { user, token } = response.data;
+      // login(user, token);
+      // Show verification message instead
       setSubmitted(true);
     } catch (err: unknown) {
       const axiosError = err as any;
@@ -113,9 +114,10 @@ const Register = () => {
             </button>
           </form>
         ) : (
-          <p className="auth-switch" style={{ textAlign: 'center', marginTop: 12 }}>
-            Account created! Scroll down to pick your genres.
-          </p>
+          <div className="auth-success">
+            <p>Verification email sent! Please check your email and click the link to verify your account.</p>
+            <p>You can close this page and return after verification.</p>
+          </div>
         )}
 
         {!submitted && (
@@ -126,6 +128,7 @@ const Register = () => {
       </div>
 
       {/* ── "Choose what you want to watch" section ── */}
+      {!submitted && (
       <div className="signup-genre-section">
         <h2 className="signup-genre-title">Choose what you want to watch</h2>
         <p className="signup-genre-sub">
@@ -150,6 +153,7 @@ const Register = () => {
           </Link>
         </div>
       </div>
+    )}
     </div>
   );
 };
