@@ -6,6 +6,7 @@
 // Uses gradient art tiles matching the mockup colour swatches.
 // Real OMDb data is available through Search; this page is a genre browse landing.
 
+import { useNavigate } from 'react-router-dom';
 import '../styles/pages.css';
 
 // Genre cards with representative gradient art (matching mockup swatches)
@@ -33,6 +34,7 @@ const FILM_GENRES = [
 ];
 
 const Films = () => {
+  const navigate = useNavigate();
   return (
     <div className="page-wrapper">
       {/* Page heading */}
@@ -41,7 +43,11 @@ const Films = () => {
       {/* 2-column genre card grid */}
       <div className="genre-grid">
         {FILM_GENRES.map((genre) => (
-          <div key={genre.label} className="genre-card">
+          <div
+            key={genre.label}
+            className="genre-card"
+            onClick={() => navigate(`/genre?type=movie&genre=${encodeURIComponent(genre.label)}`)}
+          >
             {/* Art tile */}
             <div
               className="genre-card-art"

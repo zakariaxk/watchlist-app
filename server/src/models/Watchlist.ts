@@ -20,6 +20,12 @@ const watchlistSchema = new mongoose.Schema({
 		min: 1,
 		max: 10,
 	},
+	title: {
+		type: String,
+	},
+	poster: {
+		type: String,
+	},
 	dateAdded: {
 		type: Date,
 		default: Date.now,

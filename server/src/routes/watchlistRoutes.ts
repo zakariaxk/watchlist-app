@@ -17,7 +17,7 @@ router.get("/:userId", async (req: AuthRequest, res: Response) => {
 // Add to watchlist
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { imdbID, status, userRating } = req.body;
+		const { imdbID, status, userRating, title, poster } = req.body;
 		const userId = req.user?.id;
 
 		if (!imdbID || !userId) {
@@ -34,6 +34,8 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 			imdbID,
 			status: status || "plan_to_watch",
 			userRating,
+			title,
+			poster,
 		});
 
 		await watchlistItem.save();

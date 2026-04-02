@@ -7,9 +7,13 @@
 //   - Public/private profile notice
 
 import { useState, useEffect, useContext, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { getProfile, updateProfile, searchUsers, UserProfile, PublicUser } from '../api/mediaApi';
+import {
+  getProfile, updateProfile, searchUsers,
+  UserProfile, PublicUser,
+  getFriends, FriendUser, unfollowUser,
+} from '../api/mediaApi';
 import '../styles/profile.css';
 
 const DEBOUNCE_MS = 400;
@@ -30,6 +34,10 @@ const Profile = () => {
   const [userResults, setUserResults] = useState<PublicUser[]>([]);
   const [userSearching, setUserSearching] = useState(false);
 
+  // Friends list state
+  const [friends, setFriends] = useState<FriendUser[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(true);
+
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (!context) return <div>Loading...</div>;
@@ -48,6 +56,14 @@ const Profile = () => {
       }
     };
     fetchProfile();
+  }, []);
+
+  // Fetch friends list on mount
+  useEffect(() => {
+    getFriends()
+      .then((res) => setFriends(res.data))
+      .catch(() => setFriends([]))
+      .finally(() => setFriendsLoading(false));
   }, []);
 
   // Debounced user search
@@ -81,9 +97,17 @@ const Profile = () => {
       setMessage('Failed to update profile');
     } finally {
       setSaving(false);
-      // Clear message after 3 seconds
       if (messageTimer.current) clearTimeout(messageTimer.current);
       messageTimer.current = setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleUnfollow = async (friendId: string) => {
+    try {
+      await unfollowUser(friendId);
+      setFriends((prev) => prev.filter((f) => f._id !== friendId));
+    } catch {
+      // silently fail
     }
   };
 
@@ -142,11 +166,42 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Watchlist shortcut link */}
+      {/* Watchlist shortcut link — skip, nav already has "My Watchlist" */}
+
+      {/* ── Friends (following) section ──────────────── */}
       <div className="profile-section">
-        <Link to="/watchlist" className="profile-link-btn">
-          My Watchlist →
-        </Link>
+        <h2 className="profile-section-heading">
+          People I Follow
+          {!friendsLoading && <span className="profile-friend-count">{friends.length}</span>}
+        </h2>
+        {friendsLoading ? (
+          <p className="profile-search-hint">Loading...</p>
+        ) : friends.length === 0 ? (
+          <p className="profile-search-hint">You're not following anyone yet. Use "Find People" below.</p>
+        ) : (
+          <ul className="profile-user-results">
+            {friends.map((f) => (
+              <li key={f._id} className="profile-user-result-item">
+                <button
+                  className="profile-user-result-btn"
+                  onClick={() => navigate(`/users/${f._id}`)}
+                >
+                  <span className="profile-user-result-name">{f.username}</span>
+                  {f.profileVisibility === 'private' && (
+                    <span className="profile-user-private-badge">Private</span>
+                  )}
+                </button>
+                <button
+                  className="profile-unfollow-btn"
+                  onClick={() => handleUnfollow(f._id)}
+                  title="Unfollow"
+                >
+                  Unfollow
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* ── User search section ──────────────────────── */}

@@ -4,6 +4,7 @@
 //   - Cards show year text subtly on the right (mockup shows "2025" beside label)
 //   - Same 2-column grid + footer
 
+import { useNavigate } from 'react-router-dom';
 import '../styles/pages.css';
 
 // Show genre cards with year and gradient art matching mockup colour swatches
@@ -31,6 +32,7 @@ const SHOW_GENRES = [
 ];
 
 const Shows = () => {
+  const navigate = useNavigate();
   return (
     <div className="page-wrapper">
       {/* Page heading */}
@@ -39,13 +41,17 @@ const Shows = () => {
       {/* 2-column genre card grid */}
       <div className="genre-grid">
         {SHOW_GENRES.map((genre) => (
-          <div key={genre.label} className="genre-card">
+          <div
+            key={genre.label}
+            className="genre-card"
+            onClick={() => navigate(`/genre?type=series&genre=${encodeURIComponent(genre.label)}`)}
+          >
             {/* Art tile */}
             <div
               className="genre-card-art"
               style={{ background: genre.gradient }}
             />
-            {/* Label + year row — year displayed subtly on the right like mockup */}
+            {/* Label + year row */}
             <div className="genre-card-row">
               <p className="genre-card-label">{genre.label}</p>
               {genre.year && (

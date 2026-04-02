@@ -5,11 +5,11 @@ const router = Router();
 
 const getOmdbApiKey = (): string | null => process.env.OMDB_API_KEY || null;
 
-// GET /api/media/search?title=...
+// GET /api/media/search?title=...&type=movie|series&page=1
 // Calls OMDb search endpoint and returns results. Does not persist to DB.
 router.get("/search", async (req: Request, res: ExpressResponse) => {
 	try {
-		const { title } = req.query;
+		const { title, type, page } = req.query;
 
 		if (!title || typeof title !== "string" || title.trim() === "") {
 			return res.status(400).json({ message: "title query parameter is required" });
@@ -22,8 +22,15 @@ router.get("/search", async (req: Request, res: ExpressResponse) => {
 
 		let omdbData: Record<string, unknown>;
 		try {
+			// Build URL — add &type= only when explicitly specified
+			const typeParam =
+				type === "movie" || type === "series"
+					? `&type=${encodeURIComponent(type as string)}`
+					: "";
+			const pageNum = typeof page === "string" && /^\d+$/.test(page) ? parseInt(page, 10) : 1;
+			const pageParam = pageNum > 1 ? `&page=${pageNum}` : "";
 			const omdbRes = await fetch(
-				`https://www.omdbapi.com/?apikey=${encodeURIComponent(apiKey)}&s=${encodeURIComponent(title.trim())}`
+				`https://www.omdbapi.com/?apikey=${encodeURIComponent(apiKey)}&s=${encodeURIComponent(title.trim())}${typeParam}${pageParam}`
 			);
 			if (!omdbRes.ok) {
 				return res.status(502).json({ message: "OMDb API request failed" });

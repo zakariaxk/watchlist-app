@@ -1,20 +1,25 @@
 /* hsp - home.css */
 
 .home-container {
-  max-width: 860px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 60px 24px;
-  text-align: center;
+  padding: 0 24px 80px;
 }
 
-.home-container h1 {
+/* ── Hero section ───────────────────────────────── */
+.home-hero {
+  text-align: center;
+  padding: 60px 0 48px;
+}
+
+.home-hero h1 {
   font-size: 32px;
   font-weight: 700;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #1a1a1a;
 }
 
-.home-container p {
+.home-hero p {
   font-size: 15px;
   color: #888;
   margin-bottom: 28px;
@@ -32,3 +37,84 @@
   background-color: #333;
   opacity: 1;
 }
+
+/* ── Community feed ─────────────────────────────── */
+.home-feed {
+  border-top: 1px solid #ebebeb;
+  padding-top: 32px;
+}
+
+.feed-heading {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+}
+
+.feed-empty {
+  font-size: 14px;
+  color: #aaa;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feed-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.feed-item:hover {
+  background: #fafafa;
+}
+
+.feed-poster {
+  width: 44px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.feed-poster-ph {
+  background: #e9ecef;
+}
+
+.feed-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.feed-desc {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.feed-user {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.feed-media-title {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.feed-date {
+  font-size: 12px;
+  color: #aaa;
+}
+

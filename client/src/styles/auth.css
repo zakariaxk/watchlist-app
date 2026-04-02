@@ -44,6 +44,66 @@
   margin-bottom: 5px;
 }
 
+/* Password field wrapper — input + eye toggle beside each other */
+.pw-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pw-wrap input {
+  flex: 1;
+  padding-right: 40px; /* space for toggle */
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #888;
+  display: flex;
+  align-items: center;
+  font-size: 0; /* hide any stray text */
+}
+
+.pw-toggle:hover {
+  color: #333;
+  opacity: 1;
+}
+
+/* Password strength checklist */
+.pw-checklist {
+  list-style: none;
+  margin-top: 8px;
+  padding: 0;
+}
+
+.pw-checklist li {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.pw-check-pass {
+  color: #2e7d32;
+}
+
+.pw-check-fail {
+  color: #c62828;
+}
+
+.pw-check-icon {
+  font-size: 11px;
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+}
+
 .auth-field input {
   width: 100%;
   padding: 9px 12px;

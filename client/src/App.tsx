@@ -21,6 +21,7 @@ import Profile from './pages/Profile';
 import Films from './pages/Films';
 import Shows from './pages/Shows';
 import ShowGenre from './pages/ShowGenre';
+import GenreResults from './pages/GenreResults';
 import UserPublicProfile from './pages/UserPublicProfile';
 import './styles/main.css';
 
@@ -41,6 +42,7 @@ function App() {
           <Route path="/films" element={<Films />} />
           <Route path="/shows" element={<Shows />} />
           <Route path="/show_genre" element={<ShowGenre />} />
+          <Route path="/genre" element={<GenreResults />} />
           <Route path="/search" element={<Search />} />
           <Route path="/media/:id" element={<MediaDetail />} />
 

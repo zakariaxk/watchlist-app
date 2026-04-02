@@ -9,6 +9,8 @@ import reviewRoutes from "./routes/commentRoutes";
 import reviewCommentRoutes from "./routes/reviewCommentRoutes";
 // hsp - import user routes for search and public profile lookup
 import userRoutes from "./routes/userRoutes";
+import feedRoutes from "./routes/feedRoutes";
+import friendRoutes from "./routes/friendRoutes";
 
 const app = express();
 
@@ -43,6 +45,8 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/review-comments", reviewCommentRoutes);
 // hsp - user search + public profile routes
 app.use("/api/users", userRoutes);
+app.use("/api/feed", feedRoutes);
+app.use("/api/friends", friendRoutes);
 
 // Serve static files from the client dist folder
 app.use(express.static(path.join(__dirname, "../../client/dist")));

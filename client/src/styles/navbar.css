@@ -21,21 +21,24 @@
   gap: 0;
 }
 
-/* Logo / brand mark — small image-like mark on the left */
+/* Logo */
 .navbar-logo {
   display: flex;
   align-items: center;
   margin-right: 20px;
   flex-shrink: 0;
+  text-decoration: none;
 }
 
-.navbar-logo-mark {
-  font-size: 22px;
-  line-height: 1;
-  /* Colourful emoji-style mark matching mockup logo area */
+.navbar-logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
 }
 
-/* Nav links — small, minimal, no heavy weight */
+/* Nav links — must be explicitly dark on white background */
 .navbar-links {
   display: flex;
   align-items: center;
@@ -43,34 +46,38 @@
   flex: 1;
 }
 
-.nav-link {
+.nav-link,
+.nav-link:visited,
+.nav-link:link {
   font-size: 13px;
-  color: #333;
-  font-weight: 400;
+  color: #222 !important;
+  font-weight: 500;
   white-space: nowrap;
+  text-decoration: none !important;
   transition: color 0.15s;
 }
 
 .nav-link:hover {
-  color: #000;
+  color: #000 !important;
 }
 
-/* Logout is a plain text link, not a heavy button */
+/* Logout is a plain text button */
 .nav-link-logout {
   font-size: 13px;
-  color: #333;
-  font-weight: 400;
+  color: #222 !important;
+  font-weight: 500;
   white-space: nowrap;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   font-family: inherit;
+  text-decoration: none;
   transition: color 0.15s;
 }
 
 .nav-link-logout:hover {
-  color: #000;
+  color: #000 !important;
   opacity: 1;
 }
 

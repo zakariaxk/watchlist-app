@@ -58,8 +58,9 @@ const Search = () => {
   };
 
   const handleAddToWatchlist = async (imdbID: string): Promise<string> => {
+    const found = results.find((r) => r.imdbID === imdbID);
     try {
-      await addToWatchlist({ imdbID, status: 'plan_to_watch' });
+      await addToWatchlist({ imdbID, status: 'plan_to_watch', title: found?.title, poster: found?.poster });
       return 'Added to watchlist!';
     } catch (err: unknown) {
       const axiosError = err as any;

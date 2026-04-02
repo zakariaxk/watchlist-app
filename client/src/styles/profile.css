@@ -11,20 +11,19 @@
 
 /* Large "My Profile" heading */
 .profile-heading {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #1a1a1a;
-  margin-bottom: 36px;
-  text-align: center;
+  margin-bottom: 28px;
 }
 
 /* ── Info card ────────────────────────────────── */
 .profile-card {
   background: #fff;
-  border: 1px solid #ebebeb;
   border-radius: 10px;
-  padding: 28px 24px;
+  padding: 24px;
   margin-bottom: 28px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
 }
 
 /* Each info row (label + value) */
@@ -168,14 +167,6 @@
   margin-top: 8px;
 }
 
-.profile-user-result-item {
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.profile-user-result-item:last-child {
-  border-bottom: none;
-}
-
 .profile-user-result-btn {
   width: 100%;
   text-align: left;
@@ -216,12 +207,159 @@
   color: #888;
   font-size: 13px;
   padding: 0;
-  margin-top: 20px;
+  margin-bottom: 20px;
   cursor: pointer;
   text-decoration: underline;
+  display: block;
 }
 
 .profile-back-btn:hover {
   color: #1a1a1a;
   opacity: 1;
 }
+
+/* ── Friend count badge beside heading ───────────── */
+.profile-friend-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ebebeb;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 1px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Unfollow button inside friend list rows */
+.profile-user-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.profile-user-result-item:last-child {
+  border-bottom: none;
+}
+
+.profile-unfollow-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #888;
+  padding: 3px 8px;
+  margin-right: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.profile-unfollow-btn:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+  opacity: 1;
+}
+
+/* ── Public profile header (name + follow btn) ───── */
+.pub-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pub-profile-header .profile-heading {
+  margin-bottom: 0;
+}
+
+.pub-follow-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.pub-follow-btn {
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.pub-follow-btn--following {
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #ccc;
+}
+
+.pub-follow-btn:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.pub-follow-msg {
+  font-size: 12px;
+  color: #27ae60;
+}
+
+/* ── Public profile watchlist section ────────────── */
+.pub-watchlist-section {
+  margin-top: 32px;
+}
+
+.pub-watchlist-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pub-watchlist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.pub-watchlist-item:hover {
+  background: #fafafa;
+}
+
+.pub-wl-poster {
+  width: 38px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.pub-wl-poster-ph {
+  background: #e9ecef;
+}
+
+.pub-wl-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 3px;
+}
+
+.pub-wl-status {
+  font-size: 12px;
+  color: #888;
+}
+

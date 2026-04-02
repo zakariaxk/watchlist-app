@@ -68,5 +68,67 @@
   text-decoration: none;
 }
 
+/* ── Genre card clickable cursor ───────────────── */
+.genre-card {
+  cursor: pointer;
+}
+
+/* ── Genre Results page (/genre) ─────────────────── */
+.genre-results {
+  padding-top: 24px;
+}
+
+.genre-back-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  margin-bottom: 16px;
+  display: inline-block;
+}
+
+.genre-back-btn:hover {
+  color: #222;
+  opacity: 1;
+}
+
+.genre-loading,
+.genre-empty,
+.genre-error {
+  font-size: 14px;
+  color: #888;
+  text-align: center;
+  padding: 40px 0;
+}
+
+.genre-error {
+  color: #c0392b;
+}
+
+.genre-load-more-wrap {
+  text-align: center;
+  margin-top: 32px;
+}
+
+.genre-load-more-btn {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 10px 36px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.genre-load-more-btn:disabled {
+  background: #888;
+  cursor: not-allowed;
+}
+
+.genre-load-more-btn:hover:not(:disabled) {
+  background: #333;
+  opacity: 1;
+}
+
 /* ── Footer ─────────────────────────────────────── */
 /* .page-footer defined in main.css */
