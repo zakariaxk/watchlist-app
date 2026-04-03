@@ -14,6 +14,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import Watchlist from './pages/Watchlist';
 import MediaDetail from './pages/MediaDetail';
 import Search from './pages/Search';
@@ -23,7 +24,7 @@ import Shows from './pages/Shows';
 import ShowGenre from './pages/ShowGenre';
 import GenreResults from './pages/GenreResults';
 import UserPublicProfile from './pages/UserPublicProfile';
-import './styles/main.css';
+import '../styles/main.css';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           {/* Auth pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           {/* Keep /register as an alias so existing links don't break */}
           <Route path="/register" element={<Navigate to="/signup" replace />} />
 

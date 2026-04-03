@@ -7,6 +7,7 @@ const VerifyEmail = () => {
   const [message, setMessage] = useState('Verifying your email...');
   const location = useLocation();
 
+    // On component mount, extract token from URL and call API to verify email
     useEffect(() => {
       const verifyEmail = async () => {
         const token = new URLSearchParams(location.search).get('token');
@@ -15,6 +16,7 @@ const VerifyEmail = () => {
           return;
         }
 
+        // Call backend API to verify email with the token
         try {
           await axios.get(`/auth/verify-email?token=${token}`);
           setMessage('Email verified successfully!');

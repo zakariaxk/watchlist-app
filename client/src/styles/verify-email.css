@@ -1,0 +1,25 @@
+.verify-email-page,
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-form-wrap {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.auth-title {
+  margin-bottom: 1rem;
+}
+
+.auth-success, .auth-error {
+  margin-top: 1rem;
+}

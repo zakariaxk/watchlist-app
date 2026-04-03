@@ -123,6 +123,14 @@ export const registerUser = (username: string, email: string, password: string) 
   return apiClient.post<AuthResponse>('auth/register', { username, email, password });
 };
 
+export const verifyEmail = (token: string) => {
+  return apiClient.get<{ message: string }>(`auth/verify-email?token=${encodeURIComponent(token)}`);
+};
+
+export const resendVerificationEmail = (email: string) => {
+  return apiClient.post<{ message: string }>('auth/resend-verification', { email });
+};
+
 // Login now sends username (not email) — matches updated backend
 export const loginUser = (username: string, password: string) => {
   return apiClient.post<AuthResponse>('auth/login', { username, password });
