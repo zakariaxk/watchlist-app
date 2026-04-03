@@ -2,7 +2,7 @@
 
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerUser } from '../api/mediaApi';
+import { registerUser, resendVerificationEmail } from '../api/mediaApi';
 import { AuthContext } from '../context/AuthContext';
 import '../styles/auth.css';
 
@@ -32,6 +32,9 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+  const [resendError, setResendError] = useState('');
   const context = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -40,6 +43,7 @@ const Register = () => {
 
   const allPassed = checks.every((c) => c.test(password));
 
+  // Form submission handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
@@ -49,6 +53,7 @@ const Register = () => {
       return;
     }
 
+    // Attempt registration
     setLoading(true);
     try {
       const response = await registerUser(username, email, password);
@@ -64,6 +69,24 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+ // Handler for resending verification email
+  const handleResend = async () => {
+    setResendError('');
+    setResendMessage('');
+    setResendLoading(true);
+
+    try {
+      const response = await resendVerificationEmail(email);
+      setResendMessage(response.data.message || 'Verification email resent successfully.');
+    } catch (err: unknown) {
+      const axiosError = err as any;
+      setResendError(axiosError.response?.data?.message || 'Failed to resend verification email.');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
 
   return (
     <div className="auth-page signup-page">
@@ -154,7 +177,20 @@ const Register = () => {
         ) : (
           <div className="auth-success">
             <p>Verification email sent! Please check your email and click the link to verify your account.</p>
-            <p>You can close this page and return after verification.</p>
+            <p>If you did not receive it, click the button below to resend.</p>
+            {resendError && <div className="auth-error">{resendError}</div>}
+            {resendMessage && <div className="auth-success">{resendMessage}</div>}
+            <button
+              type="button"
+              className="auth-submit-btn"
+              onClick={handleResend}
+              disabled={resendLoading || loading || !email}
+            >
+              {resendLoading ? 'Resending…' : 'Resend verification email'}
+            </button>
+            <div style={{ marginTop: '1rem' }}>
+              <Link to="/login">Back to Login</Link>
+            </div>
           </div>
         )}
 
