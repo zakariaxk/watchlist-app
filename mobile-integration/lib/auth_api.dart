@@ -90,10 +90,7 @@ class AuthSession {
 }
 
 class AuthApi {
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:5001/api',
-  );
+  static const String baseUrl = 'http://192.241.131.53:5001/api';
 
   static final Uri _registerUri = Uri.parse('$baseUrl/auth/register');
   static final Uri _loginUri = Uri.parse('$baseUrl/auth/login');
