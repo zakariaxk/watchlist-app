@@ -9,7 +9,6 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { searchMedia, OmdbSearchResult } from '../api/mediaApi';
-import watchit_main from '../assets/images/watchit_mainlogo.png';
 import watchit_mini from '../assets/images/watchit_minilogo.png';
 import '../styles/navbar.css';
 

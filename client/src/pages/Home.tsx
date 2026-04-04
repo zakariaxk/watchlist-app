@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFeed, FeedItem } from '../api/mediaApi';
+import watchit_main from '../assets/images/watchit_mainlogo.png';
 import '../styles/home.css';
 
 const statusLabel = (s: string) => {
@@ -26,6 +27,9 @@ const Home = () => {
     <div className="home-container">
       {/* Hero */}
       <div className="home-hero">
+        <div className="main-logo">
+          <img src={watchit_main} alt="WatchIt" className = "fit-logo-image"/>
+        </div>
         <h1>Discover Media</h1>
         <p>Search for movies and TV shows to add to your watchlist.</p>
         <button className="action-btn" onClick={() => navigate('/search')}>
