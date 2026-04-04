@@ -5,10 +5,14 @@
 // The search bar is a mini inline search (debounced, min 3 chars) that
 // navigates to /search?q=... on submit or result click.
 
+declare module "*.png";
+
 import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { searchMedia, OmdbSearchResult } from '../api/mediaApi';
+import watchit_main from '../assets/images/watchit_mainlogo.png';
+import watchit_mini from '../assets/images/watchit_minilogo.png';
 import '../styles/navbar.css';
 
 const MIN_CHARS = 3;
@@ -86,7 +90,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo" aria-label="WatchIt home">
-          <span className="navbar-logo-text">WatchIt!</span>
+          <img src={watchit_mini} alt="WatchIt" className = "fit-logo-image"/>
         </Link>
 
         {/* Left-side nav links */}
