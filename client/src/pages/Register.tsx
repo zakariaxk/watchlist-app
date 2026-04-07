@@ -35,6 +35,7 @@ const Register = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [resendError, setResendError] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
   const context = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -170,7 +171,7 @@ const Register = () => {
               )}
             </div>
 
-            <button type="submit" disabled={loading || !allPassed} className="auth-submit-btn">
+            <button onClick={() => setIsVisible(true)} type="submit" disabled={loading || !allPassed} className="auth-submit-btn">
               {loading ? 'Creating account...' : 'Submit'}
             </button>
           </form>
@@ -202,7 +203,8 @@ const Register = () => {
       </div>
 
       {/* ── "Choose what you want to watch" section ── */}
-      {!submitted && (
+      {!submitted && isVisible && (
+        <section>
       <div className="signup-genre-section">
         <h2 className="signup-genre-title">Choose what you want to watch</h2>
         <p className="signup-genre-sub">This is what makes WatchIt! personalised to you.</p>
@@ -219,7 +221,9 @@ const Register = () => {
           <Link to="/" className="signup-next-link">Next</Link>
         </div>
       </div>
+      </section>
     )}
+
     </div>
   );
 };
