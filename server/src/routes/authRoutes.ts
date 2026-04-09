@@ -2,14 +2,47 @@ import { Router, Request, Response } from "express";
 import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../utils/email";
 
 const router = Router();
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+const GENERIC_FORGOT_PASSWORD_MESSAGE =
+	"If an account exists for that email, a password reset link has been sent.";
+const GENERIC_RESEND_VERIFICATION_MESSAGE =
+	"If an unverified account exists for that email, a verification link has been sent.";
+
+const hashToken = (token: string): string => {
+	return crypto.createHash("sha256").update(token).digest("hex");
+};
+
+const createEmailVerificationToken = () => {
+	const rawToken = crypto.randomBytes(32).toString("hex");
+	return {
+		rawToken,
+		tokenHash: hashToken(rawToken),
+		expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+	};
+};
+
+const isStrongPassword = (password: string): boolean => {
+	return (
+		password.length >= 8 &&
+		/[A-Z]/.test(password) &&
+		/[a-z]/.test(password) &&
+		/\d/.test(password) &&
+		/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password)
+	);
+};
 
 // Register
 router.post("/register", async (req: Request, res: Response) => {
 	try {
-		const { username, email, password, profileVisibility } = req.body;
+		const { username, password, profileVisibility } = req.body;
+		const emailInput = typeof req.body?.email === "string" ? req.body.email : "";
+		const email = emailInput.trim().toLowerCase();
 
 		if (!username || !email || !password) {
 			return res.status(400).json({ message: "Username, email, and password are required" });
@@ -21,25 +54,30 @@ router.post("/register", async (req: Request, res: Response) => {
 		}
 
 		const passwordHash = await bcryptjs.hash(password, 10);
+		const verificationToken = createEmailVerificationToken();
 
 		const newUser = new User({
 			username,
 			email,
 			passwordHash,
 			profileVisibility: profileVisibility || "public",
-			// Generate email verification token and set expiration
-			verificationToken: jwt.sign({ email }, process.env.JWT_SECRET || "secret", { expiresIn: "1d" }),
-			VerificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+			verificationToken: verificationToken.tokenHash,
+			VerificationTokenExpires: verificationToken.expiresAt,
 			isVerified: false,
 		});
 		await newUser.save();
+
+		const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+		const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
+
+		await sendVerificationEmail(newUser.email, verificationLink);
 
 		const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET || "secret", {
 			expiresIn: "7d",
 		});
 
 		res.status(201).json({
-			message: "User registered successfully",
+			message: "User registered successfully. Please check your email to verify your account.",
 			user: {
 				_id: newUser._id,
 				username: newUser.username,
@@ -182,8 +220,10 @@ router.get("/verify-email", async (req: Request, res: Response) => {
 			return res.status(400).json({ message: "Verification token is required" });
 		}
 
+		const tokenHash = hashToken(token);
+
 		// Look up user by verification token
-		const user = await User.findOne({ verificationToken: token });
+		const user = await User.findOne({ verificationToken: tokenHash });
 		if (!user) {
 			return res.status(400).json({ message: "Invalid or expired verification token" });
 		}
@@ -212,27 +252,100 @@ router.post("/resend-verification", async (req: Request, res: Response) => {
 		if (!email) {
 			return res.status(400).json({ message: "Email is required" });
 		}
+		const normalizedEmail = String(email).trim().toLowerCase();
 
 		// Look up user by email
-		const user = await User.findOne({ email });
-		if (!user) {
-			return res.status(404).json({ message: "User not found" });
+		const user = await User.findOne({ email: normalizedEmail });
+
+		if (!user || user.isVerified) {
+			return res.status(200).json({ message: GENERIC_RESEND_VERIFICATION_MESSAGE });
 		}
 
-		// If already verified, no need to resend
-		if (user.isVerified) {
-			return res.status(400).json({ message: "Email is already verified" });
-		}
-
-		// Generate new verification token and update user
-		user.verificationToken = jwt.sign({ email }, process.env.JWT_SECRET || "secret", { expiresIn: "1d" });
-		user.VerificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+		const verificationToken = createEmailVerificationToken();
+		user.verificationToken = verificationToken.tokenHash;
+		user.VerificationTokenExpires = verificationToken.expiresAt;
 		await user.save();
 
-		res.status(200).json({ message: "Verification email sent" });
+		const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+		const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
+
+		await sendVerificationEmail(user.email, verificationLink);
+
+		res.status(200).json({ message: GENERIC_RESEND_VERIFICATION_MESSAGE });
 	} catch (error) {
 		console.error("Resend verification error:", error);
 		res.status(500).json({ message: "Failed to resend verification email. Please try again." });
+	}
+});
+
+router.post("/forgot-password", async (req: Request, res: Response) => {
+	try {
+		const emailInput = typeof req.body?.email === "string" ? req.body.email : "";
+		const email = emailInput.trim().toLowerCase();
+
+		if (!email) {
+			return res.status(400).json({ message: "Email is required" });
+		}
+
+		const user = await User.findOne({ email });
+
+		if (user) {
+			const rawToken = crypto.randomBytes(32).toString("hex");
+			const tokenHash = hashToken(rawToken);
+
+			user.resetPasswordToken = tokenHash;
+			user.resetPasswordExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+			await user.save();
+
+			const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+			const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
+
+			await sendPasswordResetEmail(user.email, resetLink);
+		}
+
+		return res.status(200).json({ message: GENERIC_FORGOT_PASSWORD_MESSAGE });
+	} catch (error) {
+		console.error("Forgot password error:", error);
+		return res.status(500).json({ message: "Failed to process password reset request" });
+	}
+});
+
+router.post("/reset-password", async (req: Request, res: Response) => {
+	try {
+		const token = typeof req.body?.token === "string" ? req.body.token.trim() : "";
+		const password = typeof req.body?.password === "string" ? req.body.password : "";
+
+		if (!token || !password) {
+			return res.status(400).json({ message: "Token and new password are required" });
+		}
+
+		if (!isStrongPassword(password)) {
+			return res.status(400).json({
+				message:
+					"Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
+			});
+		}
+
+		const tokenHash = hashToken(token);
+
+		const user = await User.findOne({
+			resetPasswordToken: tokenHash,
+			resetPasswordExpires: { $gt: new Date() },
+		});
+
+		if (!user) {
+			return res.status(400).json({ message: "Invalid or expired password reset token" });
+		}
+
+		user.passwordHash = await bcryptjs.hash(password, 10);
+		user.resetPasswordToken = null;
+		user.resetPasswordExpires = null;
+		await user.save();
+
+		return res.status(200).json({ message: "Password reset successful" });
+	} catch (error) {
+		console.error("Reset password error:", error);
+		return res.status(500).json({ message: "Failed to reset password" });
 	}
 });
 

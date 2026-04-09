@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import axios from 'axios';
+import { verifyEmail } from '../api/mediaApi';
 import '../styles/verify-email.css';
 
 const VerifyEmail = () => {
@@ -18,7 +18,7 @@ const VerifyEmail = () => {
 
         // Call backend API to verify email with the token
         try {
-          await axios.get(`/auth/verify-email?token=${token}`);
+          await verifyEmail(token);
           setMessage('Email verified successfully!');
         } catch (error) {
           setMessage('Email verification failed. The link may be invalid or expired.');

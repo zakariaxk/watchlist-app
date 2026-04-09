@@ -162,6 +162,17 @@
   text-align: left;
 }
 
+.auth-success {
+  background-color: #f0fff4;
+  color: #1f7a3f;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  border: 1px solid #bfe6c9;
+  text-align: left;
+}
+
 /* "Already have an account?" switch link */
 .auth-switch {
   text-align: center;
