@@ -136,6 +136,14 @@ export const loginUser = (username: string, password: string) => {
   return apiClient.post<AuthResponse>('auth/login', { username, password });
 };
 
+export const requestPasswordReset = (email: string) => {
+  return apiClient.post<{ message: string }>('auth/forgot-password', { email });
+};
+
+export const resetPassword = (token: string, password: string) => {
+  return apiClient.post<{ message: string }>('auth/reset-password', { token, password });
+};
+
 export const getProfile = () => {
   return apiClient.get<UserProfile>('auth/profile');
 };

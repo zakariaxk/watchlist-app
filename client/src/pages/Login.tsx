@@ -93,6 +93,10 @@ const Login = () => {
           <button type="submit" disabled={loading} className="auth-submit-btn">
             {loading ? 'Logging in...' : 'Submit'}
           </button>
+
+          <p className="auth-switch" style={{ marginTop: '12px' }}>
+            <Link to="/forgot-password">Forgot your password?</Link>
+          </p>
         </form>
 
         <p className="auth-switch">

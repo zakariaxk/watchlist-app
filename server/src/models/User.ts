@@ -9,8 +9,10 @@ export interface IUser extends mongoose.Document {
 	preferredGenres: string[];
 	createdAt: Date;
 	isVerified: boolean;
-	verificationToken: string;
-	VerificationTokenExpires: Date;
+	verificationToken?: string | null;
+	VerificationTokenExpires?: Date | null;
+	resetPasswordToken?: string | null;
+	resetPasswordExpires?: Date | null;
 	comparePassword(plaintext: string): Promise<boolean>;
 }
 
@@ -49,6 +51,12 @@ const userSchema = new mongoose.Schema(
 			type: String,
 		},
 		VerificationTokenExpires: {
+			type: Date,
+		},
+		resetPasswordToken: {
+			type: String,
+		},
+		resetPasswordExpires: {
 			type: Date,
 		},
 	},
