@@ -14,6 +14,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Watchlist from './pages/Watchlist';
 import MediaDetail from './pages/MediaDetail';
@@ -35,6 +37,8 @@ function App() {
           {/* Auth pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           {/* Keep /register as an alias so existing links don't break */}
           <Route path="/register" element={<Navigate to="/signup" replace />} />
