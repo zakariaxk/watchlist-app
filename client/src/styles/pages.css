@@ -1,7 +1,7 @@
 /* hsp - pages.css
    Shared styles for Films (/films), Shows (/shows), and ShowGenre (/show_genre).
    Matches the WatchIt mockup design language:
-   light background, large bold heading, 2-column genre card grid, footer. */
+   light background, large bold heading, 4-column genre card grid, footer. */
 
 /* ── Page wrapper ───────────────────────────────── */
 /* .page-wrapper is defined in main.css as a shared utility */
@@ -11,7 +11,9 @@
   font-size: 36px;
   font-weight: 700;
   color: #1a1a1a;
-  margin-bottom: 8px;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  margin-left: 25px;
 }
 
 /* Optional sub-heading / descriptor line */
@@ -22,7 +24,7 @@
 }
 
 /* ── Genre card grid ─────────────────────────────── */
-/* .genre-grid (2-col grid) defined in main.css */
+/* .genre-grid (4-col grid) defined in main.css */
 
 /* Individual genre card — art tile + label below */
 .genre-card {
@@ -31,7 +33,8 @@
 
 /* Rectangular gradient art tile with soft rounded corners */
 .genre-card-art {
-  width: 100%;
+  width: 250px;
+  height: 150px;
   aspect-ratio: 4 / 3;
   border-radius: 8px;
   margin-bottom: 10px;
@@ -39,7 +42,7 @@
 }
 
 .genre-card:hover .genre-card-art {
-  opacity: 0.9;
+  opacity: 0.7;
 }
 
 /* Genre label text below the tile */

@@ -9,6 +9,7 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { searchMedia, OmdbSearchResult } from '../api/mediaApi';
+import mini_logo from '../assets/images/watchit_minilogo.png';
 import '../styles/navbar.css';
 
 const MIN_CHARS = 3;
@@ -86,7 +87,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo" aria-label="WatchIt home">
-          <span className="navbar-logo-text">WatchIt!</span>
+          <img src={mini_logo} alt="WatchIt" className = "fit-logo-image"/>
         </Link>
 
         {/* Left-side nav links */}
