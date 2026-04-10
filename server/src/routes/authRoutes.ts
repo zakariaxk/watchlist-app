@@ -323,10 +323,15 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 			const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 			const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
-			const emailResult = await sendPasswordResetEmail(user.email, resetLink);
-			if (!emailResult.delivered) {
-				console.warn(`[forgot-password] Reset email was not delivered for ${user.email}`);
-			}
+			void sendPasswordResetEmail(user.email, resetLink)
+				.then((emailResult) => {
+					if (!emailResult.delivered) {
+						console.warn(`[forgot-password] Reset email was not delivered for ${user.email}`);
+					}
+				})
+				.catch((sendError) => {
+					console.error(`[forgot-password] Email dispatch error for ${user.email}:`, sendError);
+				});
 		}
 
 		return res.status(200).json({ message: GENERIC_FORGOT_PASSWORD_MESSAGE });

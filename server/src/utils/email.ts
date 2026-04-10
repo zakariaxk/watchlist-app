@@ -50,6 +50,9 @@ const sendEmail = async (params: {
 			host: smtpConfig.host,
 			port: smtpConfig.port,
 			secure: smtpConfig.secure,
+			connectionTimeout: 8000,
+			greetingTimeout: 8000,
+			socketTimeout: 8000,
 			auth: {
 				user: smtpConfig.user,
 				pass: smtpConfig.pass,
