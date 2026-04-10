@@ -192,6 +192,11 @@
 }
 
 /* ── Signup-only: genre tile section ─────────────── */
+.genre-selection {
+  padding-right: 100px;
+  margin-top: 10px;
+}
+
 .signup-page .signup-genre-section {
   max-width: 500px;
   margin: 56px auto 0;
@@ -228,6 +233,11 @@
 .signup-genre-tile:hover {
   opacity: 0.88;
   transform: scale(1.02);
+}
+
+.signup-genre-tile:active {
+  opacity: 0.5;
+  transform: scale(0.98);
 }
 
 /* Centered "Next" link below tiles */
@@ -336,9 +346,4 @@
   margin-bottom: 20px;
   border: 1px solid #f5c6cb;
   font-size: 14px;
-}
-
-.genre-selection {
-  padding-right: 100px;
-  margin-top: 10px;
 }

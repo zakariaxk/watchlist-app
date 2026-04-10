@@ -7,18 +7,18 @@ import { AuthContext } from '../context/AuthContext';
 import '../styles/auth.css';
 
 const GENRE_TILES = [
-  { label: 'Action',      gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
-  { label: 'Comedy',      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
-  { label: 'Drama',       gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' },
-  { label: 'Sci-Fi',      gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
-  { label: 'Romance',     gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #f8d97d 100%)' },
-  { label: 'Documentary', gradient: 'radial-gradient(circle at 60% 50%, #26d0ce 20%, #c8f7c5 70%, #d0f0e0 100%)' },
-  { label: 'Thriller',    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { label: 'Horror',      gradient: 'linear-gradient(135deg, #434343 0%, #000000 100%)' },
+  { label: 'Action',      gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)'},
+  { label: 'Comedy',      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'},
+  { label: 'Drama',       gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)'},
+  { label: 'Sci-Fi',      gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)'},
+  { label: 'Romance',     gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #f8d97d 100%)'},
+  { label: 'Documentary', gradient: 'radial-gradient(circle at 60% 50%, #26d0ce 20%, #c8f7c5 70%, #d0f0e0 100%)'},
+  { label: 'Thriller',    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'},
+  { label: 'Horror',      gradient: 'linear-gradient(135deg, #434343 0%, #471c1c 100%)'},
   { label: 'Animation',   gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
-  { label: 'Crime',       gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
-  { label: 'Fantasy',     gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' },
-  { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
+  { label: 'Crime',       gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'},
+  { label: 'Fantasy',     gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)'},
+  { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)'},
 ];
 
 // Password strength checks
@@ -94,6 +94,22 @@ const Register = () => {
     }
   };
 
+  /* Genre selection*/
+const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set());
+
+const handleClick = (label: string) => {
+  setSelectedGenres(prev => {
+    const next = new Set(prev);
+    if (next.has(label)) {
+      next.delete(label);
+    } else {
+      next.add(label);
+    }
+    return next;
+  });
+};
+
+const selected = Array.from(selectedGenres);
 
   return (
     <div className="auth-page signup-page">
@@ -217,11 +233,19 @@ const Register = () => {
         <p className="signup-genre-sub">This is what makes WatchIt! personalised to you.</p>
         <div className="signup-genre-grid">
           {GENRE_TILES.map((tile) => (
-            <div
-              key={tile.label}
-              className="signup-genre-tile"
-              style={{ background: tile.gradient }}
-            />
+            <button
+                type="button"
+                className="signup-genre-tile"
+                key={tile.label}
+                style={{
+                  background: tile.gradient,
+                  border: 'none',
+                  opacity: selectedGenres.has(tile.label) ? 0.5 : 1,
+                }}
+                onClick={() => handleClick(tile.label)}
+              >
+              {tile.label}
+            </button>
           ))}
         </div>
         <div className="signup-next-wrap">
