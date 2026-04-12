@@ -8,6 +8,7 @@ const RecommendationsPage = () => {
   if (genres.length === 0) {
     return (
       <div>
+        <h1>Your Picks</h1>
         <p>No genres selected.</p>
         <button onClick={() => navigate('/signup')}>Go back</button>
       </div>
