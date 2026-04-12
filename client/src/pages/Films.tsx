@@ -30,7 +30,7 @@ const Films = () => {
   return (
     <div className="page-wrapper">
       {/* Page heading */}
-      <h1 className="page-heading">Films</h1>
+      <h1 className="page-heading">Movies</h1>
 
       {/* 4-column genre card grid */}
       <div className="genre-grid">

@@ -53,7 +53,7 @@ const ShowGenre = () => {
       <footer className="page-footer">
         <div>
           <h4>About WatchIt!</h4>
-          <p>This was made for the CDP4331 (POOSD) large project.</p>
+          <p>This was made for the COP4331 (POOSD) large project.</p>
         </div>
         <div>
           <h4>Reach out</h4>
