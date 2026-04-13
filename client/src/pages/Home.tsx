@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFeed, FeedItem } from '../api/mediaApi';
-import logo from '../assets/images/watchit_mainlogo.png';
+import logo from '../assets/images/watchit_landing.png';
 import '../styles/home.css';
 
 const statusLabel = (s: string) => {
@@ -25,17 +25,18 @@ const Home = () => {
 
   return (
     <div>
+      <div className="main-logo">
+          <img src={logo} alt="WatchIt" className = "fit-logo-image"/>
+      </div>
       <div className="home-container">
         {/* Hero */}
         <div className="home-hero">
-          <div className="main-logo">
-            <img src={logo} alt="WatchIt" className = "fit-logo-image"/>
-          </div>
           <h1>Discover Media</h1>
           <p>Search for movies and TV shows to add to your watchlist.</p>
           <button className="action-btn" onClick={() => navigate('/search')}>
             Search Media
           </button>
+          <h1>Browse Genres</h1>
         </div>
 
         {/* Community feed */}

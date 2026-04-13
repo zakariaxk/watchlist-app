@@ -32,8 +32,9 @@
 
 /* Logo Image */
 .main-logo {
-  display: flex;
-  height: 400px;
+  display: block;
+  height: auto;
+  width: 100%;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -42,11 +43,11 @@
 }
 
 .fit-logo-image {
-  display: flex;
+  display: block;
   width: 100%;
+  height: auto;
   justify-content: center;
   align-items: center;
-  object-fit: cover;
 }
 
 .action-btn {
