@@ -96,7 +96,7 @@ const Navbar = () => {
             <>
               <Link to="/profile" className="nav-link">My Profile</Link>
               <Link to="/watchlist" className="nav-link">My Watchlist</Link>
-              <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+              
             </>
           ) : (
             <>
@@ -126,6 +126,10 @@ const Navbar = () => {
               </svg>
             </button>
           </form>
+
+          {isAuthenticated && (
+            <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+          )}
 
           {/* Inline dropdown results */}
           {query.length > 0 && (
