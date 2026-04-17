@@ -1,15 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '../api/mediaApi';
+import { isPasswordStrong, passwordStrengthChecks } from '../utils/validation';
 import '../styles/auth.css';
-
-const checks = [
-  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
-  { label: 'One uppercase letter (A-Z)', test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter (a-z)', test: (p: string) => /[a-z]/.test(p) },
-  { label: 'One number (0-9)', test: (p: string) => /\d/.test(p) },
-  { label: 'One special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(p) },
-];
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -23,7 +16,7 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const allPassed = checks.every((c) => c.test(password));
+  const allPassed = isPasswordStrong(password);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,7 +86,7 @@ const ResetPassword = () => {
 
             {password.length > 0 && (
               <ul className="pw-checklist">
-                {checks.map((c) => (
+                {passwordStrengthChecks.map((c) => (
                   <li key={c.label} className={c.test(password) ? 'pw-check-pass' : 'pw-check-fail'}>
                     <span className="pw-check-icon">{c.test(password) ? '✓' : '✗'}</span>
                     {c.label}

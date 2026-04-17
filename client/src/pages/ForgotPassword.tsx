@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { requestPasswordReset } from '../api/mediaApi';
+import { isEmailFormatValid } from '../utils/validation';
 import '../styles/auth.css';
 
 const ForgotPassword = () => {
@@ -14,9 +15,15 @@ const ForgotPassword = () => {
     setError('');
     setMessage('');
 
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isEmailFormatValid(normalizedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await requestPasswordReset(email.trim().toLowerCase());
+      const response = await requestPasswordReset(normalizedEmail);
       setMessage(response.data.message || 'If an account exists for that email, a reset link has been sent.');
     } catch (err: unknown) {
       const axiosError = err as any;
