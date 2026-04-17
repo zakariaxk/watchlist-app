@@ -183,6 +183,10 @@ export const getWatchlist = (userId: string) => {
   return apiClient.get<WatchlistItem[]>(`watchlist/${userId}`);
 };
 
+export const getMyWatchlist = () => {
+  return apiClient.get<WatchlistItem[]>('watchlist');
+};
+
 export const addToWatchlist = (data: { imdbID: string; status?: string; userRating?: number; title?: string; poster?: string }) => {
   return apiClient.post<WatchlistItem>('watchlist', data);
 };

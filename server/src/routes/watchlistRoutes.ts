@@ -3,11 +3,43 @@ import Watchlist from "../models/Watchlist";
 import { authenticate, AuthRequest } from "../middleware/auth";
 
 const router = Router();
+const watchlistDebug = process.env.WATCHLIST_DEBUG === "true";
+
+// Get authenticated user's watchlist
+router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
+	try {
+		const userId = req.user?.id;
+		if (!userId) {
+			return res.status(401).json({ message: "Unauthorized" });
+		}
+
+		const watchlist = await Watchlist.find({ userId });
+
+		if (watchlistDebug) {
+			console.log("[watchlist:get:self]", {
+				authUserId: userId,
+				count: watchlist.length,
+			});
+		}
+
+		res.status(200).json(watchlist);
+	} catch (error) {
+		res.status(500).json({ message: "Failed to fetch watchlist", error });
+	}
+});
 
 // Get user's watchlist
 router.get("/:userId", async (req: AuthRequest, res: Response) => {
 	try {
 		const watchlist = await Watchlist.find({ userId: req.params.userId });
+
+		if (watchlistDebug) {
+			console.log("[watchlist:get:byUserId]", {
+				paramUserId: req.params.userId,
+				count: watchlist.length,
+			});
+		}
+
 		res.status(200).json(watchlist);
 	} catch (error) {
 		res.status(500).json({ message: "Failed to fetch watchlist", error });
@@ -20,11 +52,26 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 		const { imdbID, status, userRating, title, poster } = req.body;
 		const userId = req.user?.id;
 
+		if (watchlistDebug) {
+			console.log("[watchlist:post]", {
+				body: req.body,
+				authUser: req.user,
+			});
+		}
+
 		if (!imdbID || !userId) {
 			return res.status(400).json({ message: "imdbID and userId are required" });
 		}
 
 		const existingItem = await Watchlist.findOne({ userId, imdbID });
+
+		if (watchlistDebug) {
+			console.log("[watchlist:post:duplicate-check]", {
+				query: { userId, imdbID },
+				found: Boolean(existingItem),
+			});
+		}
+
 		if (existingItem) {
 			return res.status(400).json({ message: "Item already in watchlist" });
 		}

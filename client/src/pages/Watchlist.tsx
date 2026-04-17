@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/watchlist.css';
 
-import { getWatchlist, updateWatchlistItem } from '../api/mediaApi';
+import { getMyWatchlist, updateWatchlistItem } from '../api/mediaApi';
+import { AuthContext } from '../context/AuthContext';
 
 type WatchlistItem = {
   _id: string;
@@ -31,6 +32,8 @@ const Watchlist = () => {
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const context = useContext(AuthContext);
+  const userId = context?.user?._id;
 
   
   useEffect(() => {
@@ -38,15 +41,12 @@ const Watchlist = () => {
       try {
         setLoading(true);
 
-        
-        const userId = localStorage.getItem('userId');
-
         if (!userId) {
           setWatchlistItems([]);
           return;
         }
 
-        const res = await getWatchlist(userId);
+        const res = await getMyWatchlist();
         setWatchlistItems(res.data);
       } catch (err) {
         console.error('Failed to load watchlist:', err);
@@ -57,7 +57,7 @@ const Watchlist = () => {
     };
 
     fetchWatchlist();
-  }, []);
+  }, [userId]);
 
 
   const handleUpdate = async (
