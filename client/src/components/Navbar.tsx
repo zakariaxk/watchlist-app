@@ -94,7 +94,6 @@ const Navbar = () => {
         <div className="navbar-links">
           {isAuthenticated ? (
             <>
-              <Link to="/profile" className="nav-link">My Profile</Link>
               <Link to="/watchlist" className="nav-link">My Watchlist</Link>
               
             </>
@@ -166,7 +165,10 @@ const Navbar = () => {
           )}
         </div>
         {isAuthenticated && (
-          <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+          <div className="navbar-auth-actions">
+            <Link to="/profile" className="nav-link">My Profile</Link>
+            <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+          </div>
         )}
       </div>
     </nav>

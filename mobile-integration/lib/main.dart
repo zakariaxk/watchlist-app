@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'auth_api.dart';
 
@@ -673,6 +673,10 @@ class _CurationPageState extends State<_CurationPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.saveOnNext) {
+      return _buildProfilePage();
+    }
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -778,6 +782,241 @@ class _CurationPageState extends State<_CurationPage> {
       ),
     );
   }
+
+  Widget _buildProfilePage() {
+    final Map<String, dynamic>? user = AuthSession.currentUser;
+    final String username =
+        user?['username']?.toString().trim().isNotEmpty == true
+        ? user!['username'].toString().trim()
+        : 'Name';
+    final String intro =
+        'A little paragraph introduction that gives a sense of what you do, '
+        'who you are, where you\'re from, and why you created this website.';
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F7),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                color: const Color(0xFFF8F8FA),
+                padding: const EdgeInsets.fromLTRB(24, 56, 24, 36),
+                child: const Center(
+                  child: Text(
+                    'My Profile',
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: double.infinity,
+                color: const Color(0xFFECEEEA),
+                padding: const EdgeInsets.fromLTRB(24, 30, 24, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: const TextStyle(
+                        fontSize: 54,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                        height: 0.95,
+                      ),
+                    ),
+                    const SizedBox(height: 26),
+                    Container(
+                      height: 250,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F4D8),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.account_circle,
+                          size: 165,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    const Text(
+                      'Introduction',
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      intro,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        height: 1.35,
+                        color: Color(0xFF686868),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: double.infinity,
+                color: const Color(0xFFF8F8FA),
+                padding: const EdgeInsets.fromLTRB(18, 28, 18, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Center(
+                      child: Text(
+                        'My Lists',
+                        style: TextStyle(
+                          fontSize: 64,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    _ProfileListCard(
+                      title: 'Want to Watch',
+                      subtitle:
+                          'Call out a feature, benefit, or value that can stand on its own.',
+                      accentGradient: LinearGradient(
+                        colors: [Color(0xFFFBE2F0), Color(0xFFF5BDD9)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      artIcon: Icons.circle,
+                      artColor: Color(0xFFE238A5),
+                    ),
+                    SizedBox(height: 16),
+                    _ProfileListCard(
+                      title: 'Already Watched',
+                      subtitle:
+                          'Call out a feature, benefit, or value that can stand on its own.',
+                      accentGradient: LinearGradient(
+                        colors: [Color(0xFFDCE7F1), Color(0xFFB0D0BA)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      artIcon: Icons.terrain,
+                      artColor: Color(0xFF355E72),
+                    ),
+                    SizedBox(height: 16),
+                    _ProfileListCard(
+                      title: 'Favorites',
+                      subtitle:
+                          'Call out a feature, benefit, or value that can stand on its own.',
+                      accentGradient: LinearGradient(
+                        colors: [Color(0xFFE0DEEE), Color(0xFFADC2F2)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      artIcon: Icons.change_history,
+                      artColor: Color(0xFF6A7FC9),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileListCard extends StatelessWidget {
+  const _ProfileListCard({
+    required this.title,
+    required this.subtitle,
+    required this.accentGradient,
+    required this.artIcon,
+    required this.artColor,
+  });
+
+  final String title;
+  final String subtitle;
+  final Gradient accentGradient;
+  final IconData artIcon;
+  final Color artColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 318,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9E9EC),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 118),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF696969),
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 104,
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: accentGradient),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(artIcon, size: 66, color: artColor),
+                    const SizedBox(width: 14),
+                    Icon(artIcon, size: 46, color: artColor.withOpacity(0.75)),
+                    const SizedBox(width: 14),
+                    Icon(artIcon, size: 56, color: artColor.withOpacity(0.9)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _CurationTile extends StatelessWidget {
@@ -817,6 +1056,12 @@ class _MainFeedPageState extends State<_MainFeedPage> {
   String? _error;
   List<FriendFeedItem> _feedItems = <FriendFeedItem>[];
   List<RecommendedMovie> _recommendedMovies = <RecommendedMovie>[];
+
+  void _openMyProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const _CurationPage(saveOnNext: false)),
+    );
+  }
 
   void _logout() {
     AuthSession.clear();
@@ -933,12 +1178,20 @@ class _MainFeedPageState extends State<_MainFeedPage> {
                     ),
                   ),
                   onSelected: (String value) {
+                    if (value == 'profile') {
+                      _openMyProfile();
+                      return;
+                    }
                     if (value == 'logout') {
                       _logout();
                     }
                   },
                   itemBuilder: (BuildContext context) =>
                       const <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'profile',
+                          child: Text('My Profile'),
+                        ),
                         PopupMenuItem<String>(
                           value: 'logout',
                           child: Text('Log Out'),
@@ -1003,12 +1256,10 @@ class _MainFeedPageState extends State<_MainFeedPage> {
                       style: TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
                     )
                   else
-                    ..._recommendedMovies
-                        .map(
-                          (RecommendedMovie movie) =>
-                              _RecommendationCard(movie: movie),
-                        )
-                        ,
+                    ..._recommendedMovies.map(
+                      (RecommendedMovie movie) =>
+                          _RecommendationCard(movie: movie),
+                    ),
                 ],
               )
             : ListView.separated(

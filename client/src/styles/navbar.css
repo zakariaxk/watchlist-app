@@ -75,6 +75,12 @@
   color: #000 !important;
 }
 
+.navbar-auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 /* Logout is a plain text button */
 .nav-link-logout {
   font-size: 13px;
