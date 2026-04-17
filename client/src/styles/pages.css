@@ -1,7 +1,7 @@
 /* hsp - pages.css
    Shared styles for Films (/films), Shows (/shows), and ShowGenre (/show_genre).
    Matches the WatchIt mockup design language:
-   light background, large bold heading, 2-column genre card grid, footer. */
+   light background, large bold heading, 4-column genre card grid, footer. */
 
 /* ── Page wrapper ───────────────────────────────── */
 /* .page-wrapper is defined in main.css as a shared utility */
@@ -11,7 +11,9 @@
   font-size: 36px;
   font-weight: 700;
   color: #1a1a1a;
-  margin-bottom: 8px;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  margin-left: 25px;
 }
 
 /* Optional sub-heading / descriptor line */
@@ -21,56 +23,17 @@
   margin-bottom: 0;
 }
 
-/* ── Genre card grid ─────────────────────────────── */
-/* .genre-grid (2-col grid) defined in main.css */
-
-/* Individual genre card — art tile + label below */
-.genre-card {
-  display: block;
+/* ── Genre rows ─────────────────────────────── */
+.genre-row {
+  display: flex;
+  flex-direction: column;
+  margin: 0 25px 40px;
 }
 
-/* Rectangular gradient art tile with soft rounded corners */
-.genre-card-art {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  transition: opacity 0.15s;
-}
-
-.genre-card:hover .genre-card-art {
-  opacity: 0.9;
-}
-
-/* Genre label text below the tile */
-.genre-card-label {
-  font-size: 14px;
-  font-weight: 400;
-  color: #1a1a1a;
-}
-
-/* Row for label + year (used by Shows page) */
-.genre-card-row {
+.genre-row-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-}
-
-/* Year shown subtly on the right — like the mockup */
-.genre-card-year {
-  font-size: 13px;
-  color: #aaa;
-}
-
-/* Makes the card a clickable link without breaking layout */
-.genre-card-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* ── Genre card clickable cursor ───────────────── */
-.genre-card {
-  cursor: pointer;
+  margin-bottom: 0.75rem;
 }
 
 /* ── Genre Results page (/genre) ─────────────────── */
@@ -132,3 +95,7 @@
 
 /* ── Footer ─────────────────────────────────────── */
 /* .page-footer defined in main.css */
+.page-footer {
+  background: #f5f5f5;
+  padding: 20px 25px;
+}

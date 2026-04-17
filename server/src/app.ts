@@ -1,6 +1,8 @@
 import cors from "cors";
 import express from "express";
+import helmet from "helmet";
 import path from "path";
+import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/authRoutes";
 import mediaRoutes from "./routes/mediaRoutes";
@@ -11,22 +13,30 @@ import reviewCommentRoutes from "./routes/reviewCommentRoutes";
 import userRoutes from "./routes/userRoutes";
 import feedRoutes from "./routes/feedRoutes";
 import friendRoutes from "./routes/friendRoutes";
+import { getAllowedOrigins } from "./config/env";
 
 const app = express();
+const isProduction = process.env.NODE_ENV === "production";
+const allowedOrigins = getAllowedOrigins();
 
-// Enhanced CORS configuration
-const allowedOrigins = [
-	"http://localhost:5173",
-	"http://localhost:5001",
-	"http://10.0.2.2:5001",
-	"http://192.241.131.53",
-	"http://192.241.131.53:5001",
-];
+app.set("trust proxy", 1);
+
+app.use(
+	helmet({
+		crossOriginResourcePolicy: false,
+	}),
+);
 
 app.use(
 	cors({
 		origin: (origin, callback) => {
-			if (!origin || allowedOrigins.includes(origin)) {
+			// Native mobile apps and server-to-server calls often omit Origin.
+			if (!origin) {
+				callback(null, true);
+				return;
+			}
+
+			if (origin && allowedOrigins.includes(origin)) {
 				callback(null, true);
 			} else {
 				callback(new Error("Not allowed by CORS"));
@@ -38,8 +48,18 @@ app.use(
 
 app.use(express.json());
 
+const authLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	max: isProduction ? 200 : 1000,
+	standardHeaders: true,
+	legacyHeaders: false,
+});
 
-app.use("/api/auth", authRoutes);
+app.get("/api/health", (_req, res) => {
+	res.status(200).json({ status: "ok" });
+});
+
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/media", mediaRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/reviews", reviewRoutes);

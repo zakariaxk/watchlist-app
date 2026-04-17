@@ -18,6 +18,14 @@ The app will run at `http://localhost:5173`
 
 The frontend connects to: `http://poosdproject.space:5001/api`
 
+For production builds, set `VITE_API_URL` to your real backend API URL.
+
+Example:
+
+```bash
+VITE_API_URL=https://api.yourdomain.com/api
+```
+
 ## Project Structure
 
 - `src/components/` - Reusable UI components

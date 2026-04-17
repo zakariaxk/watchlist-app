@@ -27,6 +27,7 @@ import ShowGenre from './pages/ShowGenre';
 import GenreResults from './pages/GenreResults';
 import UserPublicProfile from './pages/UserPublicProfile';
 import './styles/main.css';
+import Recommended from './pages/Recommended';
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
           {/* Keep /register as an alias so existing links don't break */}
           <Route path="/register" element={<Navigate to="/signup" replace />} />
+          <Route path="/recommended" element={<Recommended />} />
 
           {/* Public pages */}
           <Route path="/" element={<Home />} />

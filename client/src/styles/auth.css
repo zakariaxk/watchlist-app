@@ -3,6 +3,11 @@
    Matches mockups: compact centered form, light background, dark Submit button.
    Signup additionally has a tile grid section below the form. */
 
+/* Global font */
+* {
+  font-family: Helvetica;
+}
+
 /* Full-page wrapper — white background, top-aligned */
 .auth-page {
   background: #ffffff;
@@ -187,6 +192,11 @@
 }
 
 /* ── Signup-only: genre tile section ─────────────── */
+.genre-selection {
+  padding-right: 100px;
+  margin-top: 10px;
+}
+
 .signup-page .signup-genre-section {
   max-width: 500px;
   margin: 56px auto 0;
@@ -225,6 +235,11 @@
   transform: scale(1.02);
 }
 
+.signup-genre-tile:active {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
 /* Centered "Next" link below tiles */
 .signup-next-wrap {
   text-align: center;
@@ -249,7 +264,7 @@
   padding: 40px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
+  width: 80%;
   max-width: 400px;
 }
 
@@ -287,26 +302,6 @@
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
-.submit-btn {
-  width: 100%;
-  padding: 12px;
-  background-color: #007bff;
-  color: white;
-  font-weight: 600;
-  border-radius: 4px;
-  margin-top: 10px;
-  font-size: 16px;
-}
-
-.submit-btn:hover {
-  background-color: #0056b3;
-}
-
-.submit-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
 .auth-form p {
   text-align: center;
   margin-top: 20px;
@@ -331,4 +326,19 @@
   margin-bottom: 20px;
   border: 1px solid #f5c6cb;
   font-size: 14px;
+}
+
+.signup-next-link {
+  width: 50%;
+  padding: 10px 12px;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  margin-top: 8px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
 }

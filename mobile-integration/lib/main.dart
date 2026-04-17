@@ -143,6 +143,7 @@ class _SignUpPage extends StatelessWidget {
           child: Column(
             children: [
               _TopNavigation(logoAssetPath: logoAssetPath),
+              const _BackToHomeButton(),
               const SizedBox(height: 40),
               const Text(
                 'Sign Up',
@@ -202,6 +203,7 @@ class _LogInPage extends StatelessWidget {
           child: Column(
             children: [
               _TopNavigation(logoAssetPath: logoAssetPath),
+              const _BackToHomeButton(),
               const SizedBox(height: 40),
               const Text(
                 'Log In',
@@ -1006,7 +1008,7 @@ class _MainFeedPageState extends State<_MainFeedPage> {
                           (RecommendedMovie movie) =>
                               _RecommendationCard(movie: movie),
                         )
-                        .toList(),
+                        ,
                 ],
               )
             : ListView.separated(
@@ -1048,7 +1050,7 @@ class _RecommendationCard extends StatelessWidget {
                   width: 44,
                   height: 64,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.movie),
+                  errorBuilder: (_, _, _) => const Icon(Icons.movie),
                 ),
               )
             : const Icon(Icons.movie),
@@ -1203,6 +1205,32 @@ class _TopNavigation extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Center(child: _BrandMark(assetPath: logoAssetPath, width: 72)),
+    );
+  }
+}
+
+class _BackToHomeButton extends StatelessWidget {
+  const _BackToHomeButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back, size: 20),
+          label: const Text('Back'),
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF111827),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ export interface IUser extends mongoose.Document {
 	username: string;
 	email: string;
 	passwordHash: string;
+	isAdmin: boolean;
 	profileVisibility: string;
 	preferredGenres: string[];
 	createdAt: Date;
@@ -34,6 +35,10 @@ const userSchema = new mongoose.Schema(
 		passwordHash: {
 			type: String,
 			required: true,
+		},
+		isAdmin: {
+			type: Boolean,
+			default: false,
 		},
 		profileVisibility: {
 			type: String,

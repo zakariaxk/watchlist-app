@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../utils/email";
+import { isTestAdminBypassEnabled } from "../utils/bootstrapTestAdmin";
+import { getJwtSecret } from "../config/env";
 
 const router = Router();
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
@@ -16,6 +18,19 @@ const GENERIC_RESEND_VERIFICATION_MESSAGE =
 
 const hashToken = (token: string): string => {
 	return crypto.createHash("sha256").update(token).digest("hex");
+};
+
+const escapeRegExp = (value: string): string => {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const isConfiguredTestAdminIdentity = (user: { username?: string; email?: string }): boolean => {
+	const configuredUsername = (process.env.TEST_ADMIN_USERNAME || "admin").trim().toLowerCase();
+	const configuredEmail = (process.env.TEST_ADMIN_EMAIL || "admin@watchit.local").trim().toLowerCase();
+	const userName = String(user.username || "").trim().toLowerCase();
+	const userEmail = String(user.email || "").trim().toLowerCase();
+
+	return userName === configuredUsername && userEmail === configuredEmail;
 };
 
 const createEmailVerificationToken = () => {
@@ -70,14 +85,16 @@ router.post("/register", async (req: Request, res: Response) => {
 		const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 		const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
 
-		await sendVerificationEmail(newUser.email, verificationLink);
+		const emailResult = await sendVerificationEmail(newUser.email, verificationLink);
 
-		const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET || "secret", {
+		const token = jwt.sign({ id: newUser._id }, getJwtSecret(), {
 			expiresIn: "7d",
 		});
 
 		res.status(201).json({
-			message: "User registered successfully. Please check your email to verify your account.",
+			message: emailResult.delivered
+				? "User registered successfully. Please check your email to verify your account."
+				: "User registered, but verification email could not be sent right now. Please use resend verification after SMTP is configured.",
 			user: {
 				_id: newUser._id,
 				username: newUser.username,
@@ -97,14 +114,17 @@ router.post("/register", async (req: Request, res: Response) => {
 // Never expose passwordHash in the response.
 router.post("/login", async (req: Request, res: Response) => {
 	try {
-		const { username, password } = req.body;
+		const usernameInput = typeof req.body?.username === "string" ? req.body.username : "";
+		const password = typeof req.body?.password === "string" ? req.body.password : "";
+		const username = usernameInput.trim();
 
 		if (!username || !password) {
 			return res.status(400).json({ message: "Username and password are required" });
 		}
 
 		// Look up by username (case-insensitive match)
-		const user = await User.findOne({ username: { $regex: `^${username}$`, $options: "i" } });
+		const escapedUsername = escapeRegExp(username);
+		const user = await User.findOne({ username: { $regex: `^${escapedUsername}$`, $options: "i" } });
 		if (!user) {
 			return res.status(401).json({ message: "Invalid username or password" });
 		}
@@ -114,11 +134,14 @@ router.post("/login", async (req: Request, res: Response) => {
 			return res.status(401).json({ message: "Invalid username or password" });
 		}
 
-		if (!user.isVerified) {
+		const allowTestAdminBypass =
+			user.isAdmin && isTestAdminBypassEnabled() && isConfiguredTestAdminIdentity(user);
+
+		if (!user.isVerified && !allowTestAdminBypass) {
 			return res.status(403).json({ message: "Please verify your email before logging in." });
 		}
 
-		const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret", {
+		const token = jwt.sign({ id: user._id }, getJwtSecret(), {
 			expiresIn: "7d",
 		});
 
@@ -300,7 +323,15 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 			const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 			const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
-			await sendPasswordResetEmail(user.email, resetLink);
+			void sendPasswordResetEmail(user.email, resetLink)
+				.then((emailResult) => {
+					if (!emailResult.delivered) {
+						console.warn(`[forgot-password] Reset email was not delivered for ${user.email}`);
+					}
+				})
+				.catch((sendError) => {
+					console.error(`[forgot-password] Email dispatch error for ${user.email}:`, sendError);
+				});
 		}
 
 		return res.status(200).json({ message: GENERIC_FORGOT_PASSWORD_MESSAGE });

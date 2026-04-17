@@ -9,6 +9,7 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { searchMedia, OmdbSearchResult } from '../api/mediaApi';
+import mini_logo from '../assets/images/watchit_minilogo.png';
 import '../styles/navbar.css';
 
 const MIN_CHARS = 3;
@@ -86,7 +87,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo" aria-label="WatchIt home">
-          <span className="navbar-logo-text">WatchIt!</span>
+          <img src={mini_logo} alt="WatchIt" className = "fit-logo-image"/>
         </Link>
 
         {/* Left-side nav links */}
@@ -95,7 +96,7 @@ const Navbar = () => {
             <>
               <Link to="/profile" className="nav-link">My Profile</Link>
               <Link to="/watchlist" className="nav-link">My Watchlist</Link>
-              <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+              
             </>
           ) : (
             <>
@@ -104,7 +105,7 @@ const Navbar = () => {
             </>
           )}
           <Link to="/shows" className="nav-link">Shows</Link>
-          <Link to="/films" className="nav-link">Films</Link>
+          <Link to="/films" className="nav-link">Movies</Link>
         </div>
 
         {/* Right-side rounded search bar */}
@@ -113,7 +114,7 @@ const Navbar = () => {
             <input
               className="navbar-search-input"
               type="text"
-              placeholder="Search Films and Shows"
+              placeholder="Search Movies and Shows"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search"
@@ -164,6 +165,9 @@ const Navbar = () => {
             </div>
           )}
         </div>
+        {isAuthenticated && (
+          <button onClick={handleLogout} className="nav-link-logout">Log Out</button>
+        )}
       </div>
     </nav>
   );

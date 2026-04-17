@@ -1,108 +1,165 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getWatchlist, updateWatchlistItem, WatchlistItem } from '../api/mediaApi';
-import { AuthContext } from '../context/AuthContext';
 import '../styles/watchlist.css';
+
+import { getWatchlist, updateWatchlistItem } from '../api/mediaApi';
+
+type WatchlistItem = {
+  _id: string;
+  imdbID: string;
+  title?: string;
+  poster?: string;
+  status: string;
+  userRating?: number;
+};
 
 const STATUS_OPTIONS = ['plan_to_watch', 'watching', 'completed'];
 
 const STATUS_COLORS: Record<string, string> = {
-  plan_to_watch: '#ffc107', // yellow
-  watching: '#17a2b8',      // blue
-  completed: '#28a745',     // green
+  plan_to_watch: '#ffc107',
+  watching: '#17a2b8',
+  completed: '#28a745',
+};
+
+const getStarValue = (index: number, e: React.MouseEvent) => {
+  const rect = (e.target as HTMLElement).getBoundingClientRect();
+  const isHalf = e.clientX - rect.left < rect.width / 2;
+  return index + (isHalf ? 0.5 : 1);
 };
 
 const Watchlist = () => {
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const context = useContext(AuthContext);
   const navigate = useNavigate();
 
-  if (!context) return <div>Loading...</div>;
-  const { user } = context;
-
-  // Fetch watchlist from API
+  
   useEffect(() => {
     const fetchWatchlist = async () => {
       try {
-        if (user?._id) {
-          const response = await getWatchlist(user._id);
-          setWatchlistItems(response.data);
+        setLoading(true);
+
+        
+        const userId = localStorage.getItem('userId');
+
+        if (!userId) {
+          setWatchlistItems([]);
+          return;
         }
-      } catch {
-        setError('Failed to load watchlist');
+
+        const res = await getWatchlist(userId);
+        setWatchlistItems(res.data);
+      } catch (err) {
+        console.error('Failed to load watchlist:', err);
+        setWatchlistItems([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchWatchlist();
-  }, [user]);
+  }, []);
 
-  // Handle status or rating update
-  const handleUpdate = async (itemId: string, field: 'status' | 'userRating', value: string | number) => {
+
+  const handleUpdate = async (
+    id: string,
+    field: 'status' | 'userRating',
+    value: string | number
+  ) => {
     try {
-      await updateWatchlistItem(itemId, { [field]: value });
+      await updateWatchlistItem(id, { [field]: value });
+
       setWatchlistItems((prev) =>
-        prev.map((item) => (item._id === itemId ? { ...item, [field]: value } : item))
+        prev.map((item) =>
+          item._id === id ? { ...item, [field]: value } : item
+        )
       );
-    } catch {
-      alert('Failed to update watchlist item');
+    } catch (err) {
+      console.error('Update failed:', err);
     }
   };
 
-  if (loading) return <div className="loading">Loading watchlist...</div>;
-  if (error) return <div className="error-message">{error}</div>;
+ 
+  const renderStars = (rating: number, id: string) => {
+    return (
+      <div className="stars">
+        {[0, 1, 2, 3, 4].map((i) => {
+          const full = i + 1;
+          const half = i + 0.5;
+
+          return (
+            <span
+              key={i}
+              className={`star ${
+                rating >= full ? 'full' : rating >= half ? 'half' : ''
+              }`}
+              onClick={(e) =>
+                handleUpdate(id, 'userRating', getStarValue(i, e))
+              }
+            >
+              ★
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
+
+  if (loading) {
+    return (
+      <div className="watchlist-container">
+        <h1>Watchlist</h1>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="watchlist-container">
-      <h1>My Watchlist</h1>
+      <h1>Watchlist</h1>
+
       {watchlistItems.length === 0 ? (
         <div className="empty-state">
-          <p>No items in your watchlist yet</p>
-          <button onClick={() => navigate('/')} className="action-btn">
-            Browse Media
+          <p>No items yet</p>
+          <button className="browse-btn" onClick={() => navigate('/')}>
+          Browse Movies
           </button>
+          
         </div>
       ) : (
         <div className="watchlist-grid">
           {watchlistItems.map((item) => (
             <div key={item._id} className="watchlist-item">
-              <h3>{item.title ?? item.imdbID}</h3>
-              {item.poster && item.poster !== 'N/A' && (
-                <img src={item.poster} alt={item.title} style={{ maxWidth: 120, marginBottom: 8 }} />
+              <h3>{item.title}</h3>
+
+              {/* POSTER (assumed already stored in DB) */}
+              {item.poster && (
+                <img src={item.poster} alt={item.title} />
               )}
 
-              {/* STATUS DROPDOWN WITH BADGE STYLE */}
-              <div className="status-container">
-                <label>Status:</label>
-                <select
-                  value={item.status}
-                  onChange={(e) => handleUpdate(item._id, 'status', e.target.value)}
-                  className="status-dropdown-badge"
-                  style={{ backgroundColor: STATUS_COLORS[item.status] }}
-                >
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {status.replace('_', ' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* STATUS */}
+              <select
+                className="status-select"
+                value={item.status}
+                onChange={(e) =>
+                  handleUpdate(item._id, 'status', e.target.value)
+                }
+                style={{
+                  backgroundColor:
+                    STATUS_COLORS[item.status] || '#ccc',
+                }}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
 
               {/* RATING */}
               <div className="rating-container">
-                <label>Rating:</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={item.userRating ?? ''}
-                  onChange={(e) => handleUpdate(item._id, 'userRating', Number(e.target.value))}
-                  placeholder="1–10"
-                  className="rating-input"
-                />
+                {renderStars(item.userRating || 0, item._id)}
+                <span>{item.userRating?.toFixed(1)}</span>
               </div>
             </div>
           ))}

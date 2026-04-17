@@ -221,3 +221,19 @@
   color: #28a745;
   margin-top: 6px;
 }
+
+.genre-card-art {
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.genre-grid {
+  margin-left: 25px;
+  margin-right: 25px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 columns */
+  grid-template-rows: repeat(4, 1fr);    /* optional: 4 rows */
+  gap: 16px; /* spacing between cards */
+}

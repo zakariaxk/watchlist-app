@@ -1,18 +1,24 @@
 // Register.tsx  (route: /signup)
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { registerUser, resendVerificationEmail } from '../api/mediaApi';
 import { isEmailFormatValid, isPasswordStrong, passwordStrengthChecks } from '../utils/validation';
 import '../styles/auth.css';
 
 const GENRE_TILES = [
-  { label: 'Adventure', gradient: 'linear-gradient(135deg, #c8e6c9, #a5d6a7, #80cbc4)' },
-  { label: 'Drama', gradient: 'linear-gradient(135deg, #b2dfdb, #4db6ac, #26a69a)' },
-  { label: 'Sci-Fi', gradient: 'linear-gradient(135deg, #dce775, #aed9a2, #c5e1a5)' },
-  { label: 'Action', gradient: 'linear-gradient(135deg, #80deea, #c7a97b, #26c6da)' },
-  { label: 'Romance', gradient: 'linear-gradient(135deg, #b3e5fc, #4fc3f7, #b0bec5)' },
-  { label: 'Documentary', gradient: 'linear-gradient(135deg, #60b8f5, #a8d8ea, #e8c7c8)' },
+  { label: 'Action',      gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)'},
+  { label: 'Comedy',      gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'},
+  { label: 'Drama',       gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)'},
+  { label: 'Sci-Fi',      gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)'},
+  { label: 'Romance',     gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #f8d97d 100%)'},
+  { label: 'Documentary', gradient: 'radial-gradient(circle at 60% 50%, #26d0ce 20%, #c8f7c5 70%, #d0f0e0 100%)'},
+  { label: 'Thriller',    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'},
+  { label: 'Horror',      gradient: 'linear-gradient(135deg, #434343 0%, #471c1c 100%)'},
+  { label: 'Animation',   gradient: 'linear-gradient(135deg, #93cfef 0%, #d4f0c4 40%, #fce38a 100%)' },
+  { label: 'Crime',       gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'},
+  { label: 'Fantasy',     gradient: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)'},
+  { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)'},
 ];
 
 const Register = () => {
@@ -26,6 +32,9 @@ const Register = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [resendError, setResendError] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
+  const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set());
 
   const allPassed = isPasswordStrong(password);
 
@@ -64,10 +73,10 @@ const Register = () => {
     setResendError('');
     setResendMessage('');
 
-      if (!isEmailFormatValid(email)) {
-        setResendError('Please enter a valid email address.');
-        return;
-      }
+    if (!isEmailFormatValid(email)) {
+      setResendError('Please enter a valid email address.');
+      return;
+    }
 
     setResendLoading(true);
 
@@ -82,6 +91,19 @@ const Register = () => {
     }
   };
 
+  const handleClick = (label: string) => {
+    setSelectedGenres((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  };
+
+  const selected = Array.from(selectedGenres);
 
   return (
     <div className="auth-page signup-page">
@@ -165,10 +187,11 @@ const Register = () => {
               )}
             </div>
 
-            <button type="submit" disabled={loading || !allPassed} className="auth-submit-btn">
+            <button onClick={() => setIsVisible(true)} type="submit" disabled={loading || !allPassed} className="auth-submit-btn">
               {loading ? 'Creating account...' : 'Submit'}
             </button>
           </form>
+
         ) : (
           <div className="auth-success">
             <p>Verification email sent! Please check your email and click the link to verify your account.</p>
@@ -197,25 +220,44 @@ const Register = () => {
       </div>
 
       {/* ── "Choose what you want to watch" section ── */}
-      {!submitted && (
+      {!submitted && isVisible && (
+        <section className="genre-selection">
       <div className="signup-genre-section">
         <h2 className="signup-genre-title">Choose what you want to watch</h2>
         <p className="signup-genre-sub">This is what makes WatchIt! personalised to you.</p>
         <div className="signup-genre-grid">
           {GENRE_TILES.map((tile) => (
-            <div
-              key={tile.label}
-              className="signup-genre-tile"
-              style={{ background: tile.gradient }}
-            />
+            <button
+                type="button"
+                className="signup-genre-tile"
+                key={tile.label}
+                style={{
+                  background: tile.gradient,
+                  border: 'none',
+                  opacity: selectedGenres.has(tile.label) ? 0.5 : 1,
+                }}
+                onClick={() => handleClick(tile.label)}
+              >
+              {tile.label}
+            </button>
           ))}
         </div>
-        <div className="signup-next-wrap">
-          <Link to="/" className="signup-next-link">Next</Link>
+        {selected.length > 0 && (
+          <div className="signup-next-wrap">
+            <button
+              type="button"
+              className="signup-next-link"
+              onClick={() => navigate('/recommended', { state: { genres: Array.from(selectedGenres) } })}
+          >
+            Next
+          </button>
         </div>
+        )}
       </div>
+      </section>
     )}
-    </div>
+
+  </div>
   );
 };
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -90,7 +91,45 @@ class AuthSession {
 }
 
 class AuthApi {
-  static const String baseUrl = 'http://192.241.131.53:5001/api';
+  static const String _apiUrlFromEnv = String.fromEnvironment('WATCHIT_API_URL');
+  static const String _prodBaseUrl = 'http://watch-it.xyz/api';
+  static const String _mobileOrigin = 'http://watch-it.xyz';
+
+  static String get baseUrl {
+    if (_apiUrlFromEnv.isNotEmpty) {
+      return _normalizeBaseUrl(_apiUrlFromEnv);
+    }
+
+    // Match the website backend/database by default in all build modes.
+    return _prodBaseUrl;
+  }
+
+  static String _normalizeBaseUrl(String input) {
+    final String trimmed = input.trim().replaceFirst(RegExp(r'/+$'), '');
+    return trimmed.endsWith('/api') ? trimmed : '$trimmed/api';
+  }
+
+  static Map<String, String> _headers({
+    bool json = false,
+    String? token,
+  }) {
+    final Map<String, String> headers = <String, String>{};
+
+    if (json) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Work around deployed API CORS policy that currently expects website origin.
+    if (!kIsWeb) {
+      headers['Origin'] = _mobileOrigin;
+    }
+
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
+  }
 
   static final Uri _registerUri = Uri.parse('$baseUrl/auth/register');
   static final Uri _loginUri = Uri.parse('$baseUrl/auth/login');
@@ -132,10 +171,7 @@ class AuthApi {
       final http.Response response = await http
           .patch(
             _genrePreferencesUri,
-            headers: <String, String>{
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: _headers(json: true, token: token),
             body: jsonEncode(<String, dynamic>{'genres': genres}),
           )
           .timeout(const Duration(seconds: 15));
@@ -174,7 +210,7 @@ class AuthApi {
       final http.Response response = await http
           .get(
             _friendsFeedUri,
-            headers: <String, String>{'Authorization': 'Bearer $token'},
+            headers: _headers(token: token),
           )
           .timeout(const Duration(seconds: 15));
 
@@ -231,7 +267,7 @@ class AuthApi {
         );
 
         final http.Response response = await http
-            .get(uri)
+          .get(uri, headers: _headers())
             .timeout(const Duration(seconds: 15));
 
         if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -279,7 +315,7 @@ class AuthApi {
       final http.Response response = await http
           .post(
             uri,
-            headers: const <String, String>{'Content-Type': 'application/json'},
+            headers: _headers(json: true),
             body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 15));
@@ -322,6 +358,10 @@ class AuthApi {
       throw AuthApiException(userFriendlyMessage);
     } on AuthApiException {
       rethrow;
+    } on SocketException {
+      throw AuthApiException(
+        'Network error. Please verify your API URL and internet connection.',
+      );
     } on TimeoutException {
       if (kDebugMode) {
         print('⏱️ Timeout: Request took too long. Server may be down.');
@@ -373,9 +413,15 @@ class AuthApi {
       return <String, dynamic>{};
     }
 
-    final dynamic decoded = jsonDecode(body);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
+    try {
+      final dynamic decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      return <String, dynamic>{
+        'message': 'Server returned a non-JSON response.',
+      };
     }
 
     return <String, dynamic>{};
