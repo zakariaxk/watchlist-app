@@ -75,6 +75,70 @@ class RecommendedMovie {
   }
 }
 
+class MediaDetail {
+  MediaDetail({
+    required this.imdbID,
+    required this.title,
+    required this.year,
+    required this.type,
+    required this.genres,
+    required this.poster,
+  });
+
+  final String imdbID;
+  final String title;
+  final String year;
+  final String type;
+  final List<String> genres;
+  final String poster;
+
+  factory MediaDetail.fromJson(Map<String, dynamic> json) {
+    final dynamic rawGenres = json['genres'];
+    final List<String> genres = rawGenres is List
+        ? rawGenres.map((dynamic value) => value.toString()).toList()
+        : <String>[];
+
+    return MediaDetail(
+      imdbID: json['imdbID']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Untitled',
+      year: json['year']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
+      genres: genres,
+      poster: json['poster']?.toString() ?? '',
+    );
+  }
+}
+
+class WatchlistItem {
+  WatchlistItem({
+    required this.id,
+    required this.imdbID,
+    required this.status,
+    required this.title,
+    required this.poster,
+    required this.dateAdded,
+  });
+
+  final String id;
+  final String imdbID;
+  final String status;
+  final String title;
+  final String poster;
+  final DateTime dateAdded;
+
+  factory WatchlistItem.fromJson(Map<String, dynamic> json) {
+    final String rawDate = json['dateAdded']?.toString() ?? '';
+    return WatchlistItem(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      imdbID: json['imdbID']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'plan_to_watch',
+      title: json['title']?.toString() ?? 'Untitled',
+      poster: json['poster']?.toString() ?? '',
+      dateAdded: DateTime.tryParse(rawDate) ?? DateTime.now(),
+    );
+  }
+}
+
 class AuthSession {
   static Map<String, dynamic>? currentUser;
   static String? authToken;
@@ -141,6 +205,13 @@ class AuthApi {
   );
   static final Uri _friendsFeedUri = Uri.parse('$baseUrl/feed/friends');
   static final Uri _mediaSearchUri = Uri.parse('$baseUrl/media/search');
+  static final Uri _watchlistUri = Uri.parse('$baseUrl/watchlist');
+
+  static Uri _watchlistItemUri(String id) =>
+      Uri.parse('$baseUrl/watchlist/${Uri.encodeComponent(id)}');
+
+  static Uri _mediaDetailUri(String imdbID) =>
+      Uri.parse('$baseUrl/media/${Uri.encodeComponent(imdbID)}');
 
   static Future<AuthResult> register({
     required String username,
@@ -392,6 +463,165 @@ class AuthApi {
     }
 
     return results;
+  }
+
+  static Future<MediaDetail> fetchMediaDetail(String imdbID) async {
+    final String trimmed = imdbID.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing imdbID.');
+    }
+
+    try {
+      final http.Response response = await http
+          .get(_mediaDetailUri(trimmed), headers: _headers())
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return MediaDetail.fromJson(payload);
+      }
+
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to load media details.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<List<WatchlistItem>> fetchMyWatchlist() async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to view your watchlist.');
+    }
+
+    try {
+      final http.Response response = await http
+          .get(_watchlistUri, headers: _headers(token: token))
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final Map<String, dynamic> payload = _decodeJson(response.body);
+        final String backendMessage =
+            payload['message']?.toString() ?? 'Failed to fetch watchlist.';
+        throw AuthApiException(backendMessage);
+      }
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        return <WatchlistItem>[];
+      }
+
+      return decoded
+          .whereType<Map>()
+          .map(
+            (dynamic item) =>
+                WatchlistItem.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList();
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<WatchlistItem> addToWatchlist({
+    required String imdbID,
+    String? title,
+    String? poster,
+    String status = 'plan_to_watch',
+  }) async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to update your watchlist.');
+    }
+
+    final String trimmed = imdbID.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing imdbID.');
+    }
+
+    try {
+      final http.Response response = await http
+          .post(
+            _watchlistUri,
+            headers: _headers(json: true, token: token),
+            body: jsonEncode(<String, dynamic>{
+              'imdbID': trimmed,
+              'status': status,
+              if (title != null) 'title': title,
+              if (poster != null) 'poster': poster,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final dynamic data = payload['data'];
+        if (data is Map) {
+          return WatchlistItem.fromJson(Map<String, dynamic>.from(data));
+        }
+        throw AuthApiException('Added to watchlist.');
+      }
+
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to add to watchlist.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<void> deleteWatchlistItem(String id) async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to update your watchlist.');
+    }
+
+    final String trimmed = id.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing watchlist item id.');
+    }
+
+    try {
+      final http.Response response = await http
+          .delete(_watchlistItemUri(trimmed), headers: _headers(token: token))
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      }
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to remove from watchlist.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
   }
 
   static Future<AuthResult> _postAuth(

@@ -617,9 +617,23 @@ class _CurationPageState extends State<_CurationPage> {
   bool _isProfileSaving = false;
   String _profileEmail = '';
   String _profileVisibility = 'public';
+  List<WatchlistItem> _watchlistItems = <WatchlistItem>[];
   String _introduction =
       'A little paragraph introduction that gives a sense of what you do, '
       'who you are, where you\'re from, and why you created this website.';
+
+  String _formatTitleCount(int count) {
+    if (count == 1) {
+      return '1 title';
+    }
+    return '$count titles';
+  }
+
+  int _countByStatus(String status) {
+    return _watchlistItems
+        .where((WatchlistItem item) => item.status == status)
+        .length;
+  }
 
   @override
   void initState() {
@@ -686,6 +700,7 @@ class _CurationPageState extends State<_CurationPage> {
 
     try {
       final Map<String, dynamic> profile = await AuthApi.fetchProfile();
+      final List<WatchlistItem> watchlist = await AuthApi.fetchMyWatchlist();
       if (!mounted) {
         return;
       }
@@ -699,6 +714,8 @@ class _CurationPageState extends State<_CurationPage> {
         if (intro.isNotEmpty) {
           _introduction = intro;
         }
+
+        _watchlistItems = watchlist;
       });
     } on AuthApiException catch (error) {
       if (!mounted) {
@@ -1101,6 +1118,9 @@ class _CurationPageState extends State<_CurationPage> {
   }
 
   Widget _buildProfilePage() {
+    final int wantToWatchCount = _countByStatus('plan_to_watch');
+    final int alreadyWatchedCount = _countByStatus('completed');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       body: SafeArea(
@@ -1218,10 +1238,9 @@ class _CurationPageState extends State<_CurationPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              const _ProfileListCard(
+              _ProfileListCard(
                 title: 'Want to Watch',
-                subtitle:
-                    'Call out a feature, benefit, or value that can stand on its own.',
+                subtitle: _formatTitleCount(wantToWatchCount),
                 accentGradient: LinearGradient(
                   colors: [Color(0xFFFBE2F0), Color(0xFFF5BDD9)],
                   begin: Alignment.topCenter,
@@ -1231,10 +1250,9 @@ class _CurationPageState extends State<_CurationPage> {
                 artColor: Color(0xFFE238A5),
               ),
               const SizedBox(height: 16),
-              const _ProfileListCard(
+              _ProfileListCard(
                 title: 'Already Watched',
-                subtitle:
-                    'Call out a feature, benefit, or value that can stand on its own.',
+                subtitle: _formatTitleCount(alreadyWatchedCount),
                 accentGradient: LinearGradient(
                   colors: [Color(0xFFDCE7F1), Color(0xFFB0D0BA)],
                   begin: Alignment.topCenter,
@@ -1244,10 +1262,9 @@ class _CurationPageState extends State<_CurationPage> {
                 artColor: Color(0xFF355E72),
               ),
               const SizedBox(height: 16),
-              const _ProfileListCard(
+              _ProfileListCard(
                 title: 'Favorites',
-                subtitle:
-                    'Call out a feature, benefit, or value that can stand on its own.',
+                subtitle: _formatTitleCount(0),
                 accentGradient: LinearGradient(
                   colors: [Color(0xFFE0DEEE), Color(0xFFADC2F2)],
                   begin: Alignment.topCenter,
@@ -2021,6 +2038,19 @@ class _RecommendationCard extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        onTap: movie.imdbID.trim().isEmpty
+            ? null
+            : () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => _MediaDetailPage(
+                      imdbID: movie.imdbID,
+                      title: movie.title,
+                      poster: movie.poster,
+                    ),
+                  ),
+                );
+              },
         leading: movie.poster != null && movie.poster!.isNotEmpty
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -2044,6 +2074,400 @@ class _RecommendationCard extends StatelessWidget {
           movie.year.isEmpty ? mediaType : '${movie.year} • $mediaType',
           style: const TextStyle(color: Color(0xFF6B7280)),
         ),
+      ),
+    );
+  }
+}
+
+class _MediaDetailPage extends StatefulWidget {
+  const _MediaDetailPage({
+    required this.imdbID,
+    required this.title,
+    required this.poster,
+  });
+
+  final String imdbID;
+  final String title;
+  final String? poster;
+
+  @override
+  State<_MediaDetailPage> createState() => _MediaDetailPageState();
+}
+
+class _MediaDetailPageState extends State<_MediaDetailPage> {
+  bool _isLoading = true;
+  String? _error;
+  MediaDetail? _detail;
+  bool _isAdding = false;
+  bool _added = false;
+  bool _isRemoving = false;
+  WatchlistItem? _watchlistItem;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final MediaDetail detail = await AuthApi.fetchMediaDetail(widget.imdbID);
+
+      WatchlistItem? existing;
+      try {
+        final List<WatchlistItem> watchlist = await AuthApi.fetchMyWatchlist();
+        existing = watchlist.cast<WatchlistItem?>().firstWhere(
+          (WatchlistItem? item) => item?.imdbID == widget.imdbID,
+          orElse: () => null,
+        );
+      } catch (_) {
+        // Ignore watchlist lookup failures; detail screen can still render.
+      }
+
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _detail = detail;
+        _watchlistItem = existing;
+        _added = existing != null;
+      });
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _error = 'Could not load details right now.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _addToWatchlist() async {
+    if (_isAdding || _added) {
+      return;
+    }
+
+    setState(() {
+      _isAdding = true;
+      _error = null;
+    });
+
+    try {
+      final WatchlistItem item = await AuthApi.addToWatchlist(
+        imdbID: widget.imdbID,
+        title: _detail?.title ?? widget.title,
+        poster: _detail?.poster.isNotEmpty == true
+            ? _detail!.poster
+            : widget.poster,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _added = true;
+        _watchlistItem = item;
+      });
+      _showSnackBar('Added to watchlist!');
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final String msg = error.message;
+      if (msg.toLowerCase().contains('already in watchlist')) {
+        WatchlistItem? existing;
+        try {
+          final List<WatchlistItem> watchlist =
+              await AuthApi.fetchMyWatchlist();
+          existing = watchlist.cast<WatchlistItem?>().firstWhere(
+            (WatchlistItem? item) => item?.imdbID == widget.imdbID,
+            orElse: () => null,
+          );
+        } catch (_) {
+          // Ignore.
+        }
+
+        setState(() {
+          _added = true;
+          _watchlistItem = existing;
+        });
+      }
+      _showSnackBar(msg);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar('Could not update watchlist right now.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAdding = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _removeFromWatchlist() async {
+    if (_isRemoving || !_added) {
+      return;
+    }
+
+    setState(() {
+      _isRemoving = true;
+      _error = null;
+    });
+
+    try {
+      WatchlistItem? current = _watchlistItem;
+      if (current == null || current.id.trim().isEmpty) {
+        try {
+          final List<WatchlistItem> watchlist =
+              await AuthApi.fetchMyWatchlist();
+          current = watchlist.cast<WatchlistItem?>().firstWhere(
+            (WatchlistItem? item) => item?.imdbID == widget.imdbID,
+            orElse: () => null,
+          );
+        } catch (_) {
+          // Ignore.
+        }
+      }
+
+      if (current == null || current.id.trim().isEmpty) {
+        throw AuthApiException('Could not find this item in your watchlist.');
+      }
+
+      await AuthApi.deleteWatchlistItem(current.id);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _added = false;
+        _watchlistItem = null;
+      });
+      _showSnackBar('Removed from watchlist.');
+    } on AuthApiException catch (error) {
+      _showSnackBar(error.message);
+    } catch (_) {
+      _showSnackBar('Could not update watchlist right now.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRemoving = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String title = _detail?.title ?? widget.title;
+    final String poster = _detail?.poster.isNotEmpty == true
+        ? _detail!.poster
+        : (widget.poster ?? '');
+    final String year = _detail?.year ?? '';
+    final String mediaType = _detail?.type.toLowerCase() == 'series'
+        ? 'TV Series'
+        : _detail?.type.toLowerCase() == 'movie'
+        ? 'Movie'
+        : '';
+    final List<String> genres = _detail?.genres ?? <String>[];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          title.isEmpty ? 'Details' : title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? ListView(
+                children: [
+                  const SizedBox(height: 120),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFB91C1C),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  if (poster.isNotEmpty)
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.network(
+                          poster,
+                          width: 180,
+                          height: 260,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.movie,
+                            size: 90,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    const Center(
+                      child: Icon(
+                        Icons.movie,
+                        size: 90,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    [
+                      year,
+                      mediaType,
+                    ].where((String v) => v.trim().isNotEmpty).join(' • '),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                  if (genres.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: genres
+                          .take(6)
+                          .map(
+                            (String genre) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: const Color(0xFFE5E7EB),
+                                ),
+                              ),
+                              child: Text(
+                                genre,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _added
+                          ? null
+                          : (_isAdding ? null : _addToWatchlist),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF101114),
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        _added
+                            ? 'In Watchlist'
+                            : (_isAdding ? 'Adding...' : 'Add to Watchlist'),
+                      ),
+                    ),
+                  ),
+                  if (_added) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _isRemoving ? null : _removeFromWatchlist,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF3F4F6),
+                          foregroundColor: Colors.black,
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                          ),
+                        ),
+                        child: Text(
+                          _isRemoving ? 'Removing...' : 'Remove from Watchlist',
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
       ),
     );
   }
