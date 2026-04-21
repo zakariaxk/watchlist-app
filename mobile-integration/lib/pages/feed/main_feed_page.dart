@@ -218,6 +218,15 @@ class _MainFeedPageState extends State<MainFeedPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  const Text(
+                    'Friends Feed',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   const Center(
                     child: Text(
                       'Nothing to see here yet...',
@@ -282,13 +291,24 @@ class _MainFeedPageState extends State<MainFeedPage> {
                     );
                   }
 
-                  final FriendFeedItem item = _feedItems[index - 1];
+                  if (index == 1) {
+                    return const Text(
+                      'Friends Feed',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                      ),
+                    );
+                  }
+
+                  final FriendFeedItem item = _feedItems[index - 2];
                   return _FeedStatusCard(item: item);
                 },
                 separatorBuilder: (_, index) => index == 0
                     ? const SizedBox(height: 20)
                     : const SizedBox(height: 12),
-                itemCount: _feedItems.length + 1,
+                itemCount: _feedItems.length + 2,
               ),
       ),
     );

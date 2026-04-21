@@ -183,16 +183,13 @@ class AuthApi {
   static const String _localFavoritesKey = 'watchit_favorite_imdb_ids';
 
   static bool get _useLocalFavorites {
-    // Only use device-local favorites when NOT using the website's API.
-    // This keeps mobile behavior consistent with the website when pointing at
-    // the same backend (watch-it.xyz).
-    return !baseUrl.contains('watch-it.xyz');
+    // Always persist favorites locally.
+    // Some backends may not persist/return `isFavorite` reliably, and the mobile
+    // UX expects favorites to survive navigation/app restarts.
+    return true;
   }
 
   static Future<Set<String>> _getLocalFavorites() async {
-    if (!_useLocalFavorites) {
-      return <String>{};
-    }
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     return (prefs.getStringList(_localFavoritesKey) ?? <String>[])
         .map((String id) => id.trim())
@@ -204,9 +201,6 @@ class AuthApi {
     required String imdbID,
     required bool isFavorite,
   }) async {
-    if (!_useLocalFavorites) {
-      return;
-    }
     final String trimmed = imdbID.trim();
     if (trimmed.isEmpty) {
       return;
@@ -611,10 +605,6 @@ class AuthApi {
           )
           .toList();
 
-      if (!_useLocalFavorites) {
-        return items;
-      }
-
       final Set<String> favorites = await _getLocalFavorites();
       if (favorites.isEmpty) {
         return items;
@@ -663,9 +653,9 @@ class AuthApi {
             body: jsonEncode(<String, dynamic>{
               'imdbID': trimmed,
               'status': status,
-              if (title != null) 'title': title,
-              if (poster != null) 'poster': poster,
-              if (isFavorite != null) 'isFavorite': isFavorite,
+              'title': ?title,
+              'poster': ?poster,
+              'isFavorite': ?isFavorite,
             }),
           )
           .timeout(const Duration(seconds: 15));
@@ -677,8 +667,8 @@ class AuthApi {
           final WatchlistItem item = WatchlistItem.fromJson(
             Map<String, dynamic>.from(data),
           );
-          if (_useLocalFavorites && isFavorite == true) {
-            await setLocalFavorite(imdbID: item.imdbID, isFavorite: true);
+          if (isFavorite != null) {
+            await setLocalFavorite(imdbID: item.imdbID, isFavorite: isFavorite);
           }
           return item;
         }
@@ -784,7 +774,13 @@ class AuthApi {
         }
         final dynamic data = payload['data'];
         if (data is Map) {
-          return WatchlistItem.fromJson(Map<String, dynamic>.from(data));
+          final WatchlistItem item = WatchlistItem.fromJson(
+            Map<String, dynamic>.from(data),
+          );
+          if (isFavorite != null) {
+            await setLocalFavorite(imdbID: item.imdbID, isFavorite: isFavorite);
+          }
+          return item;
         }
         throw AuthApiException('Updated watchlist item.');
       }
