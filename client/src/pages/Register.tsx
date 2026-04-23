@@ -29,6 +29,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [resendError, setResendError] = useState('');
@@ -56,9 +57,12 @@ const Register = () => {
     // Attempt registration
     setLoading(true);
     try {
-      await registerUser(username, email, password);
+      const response = await registerUser(username, email, password);
       // Note: With email verification, backend won't return token yet
       // Show verification message instead
+      setRegistrationMessage(
+        response.data?.message || 'Verification email sent! Please check your inbox.'
+      );
       setSubmitted(true);
     } catch (err: unknown) {
       const axiosError = err as any;
@@ -194,7 +198,7 @@ const Register = () => {
 
         ) : (
           <div className="auth-success">
-            <p>Verification email sent! Please check your email and click the link to verify your account.</p>
+            <p>{registrationMessage || 'Verification email sent! Please check your email and click the link to verify your account.'}</p>
             <p>If you did not receive it, click the button below to resend.</p>
             {resendError && <div className="auth-error">{resendError}</div>}
             {resendMessage && <div className="auth-success">{resendMessage}</div>}

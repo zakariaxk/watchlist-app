@@ -65,6 +65,33 @@ router.post("/register", async (req: Request, res: Response) => {
 
 		const existingUser = await User.findOne({ $or: [{ email }, { username }] });
 		if (existingUser) {
+			const existingEmail = String(existingUser.email || "").trim().toLowerCase();
+
+			if (!existingUser.isVerified && existingEmail === email) {
+				const verificationToken = createEmailVerificationToken();
+				existingUser.verificationToken = verificationToken.tokenHash;
+				existingUser.VerificationTokenExpires = verificationToken.expiresAt;
+				await existingUser.save();
+
+				const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+				const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
+
+				void sendVerificationEmail(existingUser.email, verificationLink)
+					.then((emailResult) => {
+						if (!emailResult.delivered) {
+							console.warn(`[register] Verification email was not delivered for ${existingUser.email}`);
+						}
+					})
+					.catch((sendError) => {
+						console.error(`[register] Verification email dispatch error for ${existingUser.email}:`, sendError);
+					});
+
+				return res.status(200).json({
+					message:
+						"Account already exists but is not verified. A new verification email has been sent.",
+				});
+			}
+
 			return res.status(400).json({ message: "User already exists" });
 		}
 
@@ -85,16 +112,23 @@ router.post("/register", async (req: Request, res: Response) => {
 		const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 		const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
 
-		const emailResult = await sendVerificationEmail(newUser.email, verificationLink);
+		void sendVerificationEmail(newUser.email, verificationLink)
+			.then((emailResult) => {
+				if (!emailResult.delivered) {
+					console.warn(`[register] Verification email was not delivered for ${newUser.email}`);
+				}
+			})
+			.catch((sendError) => {
+				console.error(`[register] Verification email dispatch error for ${newUser.email}:`, sendError);
+			});
 
 		const token = jwt.sign({ id: newUser._id }, getJwtSecret(), {
 			expiresIn: "7d",
 		});
 
 		res.status(201).json({
-			message: emailResult.delivered
-				? "User registered successfully. Please check your email to verify your account."
-				: "User registered, but verification email could not be sent right now. Please use resend verification after SMTP is configured.",
+			message:
+				"User registered successfully. Please check your email to verify your account. If it does not arrive, use resend verification.",
 			user: {
 				_id: newUser._id,
 				username: newUser.username,
