@@ -106,8 +106,9 @@
 }
 
 .genre-row-item {
-  flex: 0 0 auto;      /* ← prevent items from shrinking */
-  width: 190px;        /* ← or whatever card width you prefer */
+  flex: 0 0 auto;
+  width: 190px;
+  height: 425px;  
 }
 
 /* ── Footer ─────────────────────────────────────── */
