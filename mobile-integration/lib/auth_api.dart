@@ -25,27 +25,37 @@ class AuthResult {
 
 class FriendFeedItem {
   FriendFeedItem({
+    required this.imdbID,
     required this.username,
     required this.title,
     required this.status,
     required this.dateAdded,
     this.poster,
+    this.userRating,
   });
 
+  final String imdbID;
   final String username;
   final String title;
   final String status;
   final DateTime dateAdded;
   final String? poster;
+  final double? userRating;
 
   factory FriendFeedItem.fromJson(Map<String, dynamic> json) {
     final String rawDate = json['dateAdded']?.toString() ?? '';
+    final dynamic rawRating = json['userRating'];
+    final double? parsedRating = rawRating is num
+        ? rawRating.toDouble()
+        : double.tryParse(rawRating?.toString() ?? '');
     return FriendFeedItem(
+      imdbID: json['imdbID']?.toString() ?? '',
       username: json['username']?.toString() ?? 'Unknown',
       title: json['title']?.toString() ?? 'Untitled',
       status: json['status']?.toString() ?? 'watching',
       dateAdded: DateTime.tryParse(rawDate) ?? DateTime.now(),
       poster: json['poster']?.toString(),
+      userRating: parsedRating,
     );
   }
 }
@@ -119,6 +129,7 @@ class WatchlistItem {
     required this.poster,
     required this.isFavorite,
     required this.dateAdded,
+    this.userRating,
   });
 
   final String id;
@@ -128,9 +139,14 @@ class WatchlistItem {
   final String poster;
   final bool isFavorite;
   final DateTime dateAdded;
+  final double? userRating;
 
   factory WatchlistItem.fromJson(Map<String, dynamic> json) {
     final String rawDate = json['dateAdded']?.toString() ?? '';
+    final dynamic rawRating = json['userRating'];
+    final double? parsedRating = rawRating is num
+        ? rawRating.toDouble()
+        : double.tryParse(rawRating?.toString() ?? '');
     return WatchlistItem(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       imdbID: json['imdbID']?.toString() ?? '',
@@ -139,6 +155,7 @@ class WatchlistItem {
       poster: json['poster']?.toString() ?? '',
       isFavorite: json['isFavorite'] == true,
       dateAdded: DateTime.tryParse(rawDate) ?? DateTime.now(),
+      userRating: parsedRating,
     );
   }
 
@@ -148,6 +165,7 @@ class WatchlistItem {
     String? poster,
     bool? isFavorite,
     DateTime? dateAdded,
+    double? userRating,
   }) {
     return WatchlistItem(
       id: id,
@@ -157,6 +175,7 @@ class WatchlistItem {
       poster: poster ?? this.poster,
       isFavorite: isFavorite ?? this.isFavorite,
       dateAdded: dateAdded ?? this.dateAdded,
+      userRating: userRating ?? this.userRating,
     );
   }
 }
@@ -796,7 +815,7 @@ class AuthApi {
   static Future<WatchlistItem> updateWatchlistItem({
     required String id,
     String? status,
-    int? userRating,
+    double? userRating,
     bool? isFavorite,
   }) async {
     final String? token = AuthSession.authToken;

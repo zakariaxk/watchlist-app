@@ -63,6 +63,7 @@ router.get("/friends", authenticate, async (req: AuthRequest, res: Response) => 
           title: title || item.imdbID,
           poster,
           status: item.status,
+          userRating: item.userRating,
           dateAdded: item.dateAdded,
         };
       })
@@ -108,6 +109,7 @@ router.get("/", async (_req, res: Response) => {
           title: title || item.imdbID,
           poster,
           status: item.status,
+          userRating: item.userRating,
           dateAdded: item.dateAdded,
         };
       })

@@ -39,9 +39,6 @@ class _CurationPageState extends State<CurationPage> {
   String _profileEmail = '';
   String _profileVisibility = 'public';
   List<WatchlistItem> _watchlistItems = <WatchlistItem>[];
-  String _introduction =
-      'A little paragraph introduction that gives a sense of what you do, '
-      'who you are, where you\'re from, and why you created this website.';
 
   String _formatTitleCount(int count) {
     if (count == 1) {
@@ -134,11 +131,6 @@ class _CurationPageState extends State<CurationPage> {
             profile['profileVisibility']?.toString().trim().toLowerCase() ??
             _profileVisibility;
         _profileVisibility = visibility == 'private' ? 'private' : 'public';
-        final String intro = profile['introduction']?.toString().trim() ?? '';
-        if (intro.isNotEmpty) {
-          _introduction = intro;
-        }
-
         _watchlistItems = watchlist;
       });
     } on AuthApiException catch (error) {
@@ -183,108 +175,6 @@ class _CurationPageState extends State<CurationPage> {
       email: result.email,
       profileVisibility: result.profileVisibility,
     );
-  }
-
-  Future<void> _openEditIntroductionDialog() async {
-    final TextEditingController introController = TextEditingController(
-      text: _introduction,
-    );
-
-    final bool? shouldSave = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Edit Introduction'),
-          content: SizedBox(
-            width: 360,
-            child: TextField(
-              controller: introController,
-              minLines: 4,
-              maxLines: 7,
-              maxLength: 500,
-              decoration: const InputDecoration(
-                hintText: 'Tell people about yourself...',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldSave != true) {
-      return;
-    }
-
-    final String nextIntro = introController.text.trim();
-    setState(() {
-      _isProfileSaving = true;
-      _serverError = null;
-    });
-
-    try {
-      final Map<String, dynamic> payload = await AuthApi.updateProfile(
-        introduction: nextIntro,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      final dynamic userPayload = payload['user'];
-      if (userPayload is Map) {
-        final Map<String, dynamic> profile = <String, dynamic>{
-          for (final MapEntry<dynamic, dynamic> entry in userPayload.entries)
-            entry.key.toString(): entry.value,
-        };
-        setState(() {
-          _introduction =
-              profile['introduction']?.toString().trim() ?? nextIntro;
-        });
-      } else {
-        setState(() {
-          _introduction = nextIntro;
-        });
-      }
-
-      if (AuthSession.currentUser != null) {
-        AuthSession.currentUser!['introduction'] = _introduction;
-      }
-
-      _showSnackBar('Introduction updated.');
-    } on AuthApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _serverError = error.message;
-      });
-      _showSnackBar(error.message);
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _serverError = 'Could not update your introduction right now.';
-      });
-      _showSnackBar('Could not update your introduction right now.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isProfileSaving = false;
-        });
-      }
-    }
   }
 
   Future<void> _saveProfileUpdates({
@@ -403,34 +293,6 @@ class _CurationPageState extends State<CurationPage> {
                 ),
               ),
               child: const Text('My Watchlist'),
-            ),
-            TextButton(
-              onPressed: () {
-                _showSnackBar('Shows is coming soon on mobile.');
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF374151),
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-              child: const Text('Shows'),
-            ),
-            TextButton(
-              onPressed: () {
-                _showSnackBar('Movies is coming soon on mobile.');
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF374151),
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-              child: const Text('Movies'),
             ),
           ],
         ),
@@ -614,49 +476,6 @@ class _CurationPageState extends State<CurationPage> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECEEEA),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Introduction',
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: _isProfileSaving
-                              ? null
-                              : _openEditIntroductionDialog,
-                          icon: const Icon(Icons.edit, size: 18),
-                          label: const Text('Edit'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _introduction,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.4,
-                        color: Color(0xFF595B61),
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

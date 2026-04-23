@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../auth_api.dart';
+import '../media/media_detail_page.dart';
 
 enum MyWatchlistView { all, watchlist, watched, favorites }
 
@@ -209,6 +210,23 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
     }
   }
 
+  Future<void> _openDetails(WatchlistItem item) async {
+    final bool? changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => MediaDetailPage(
+          imdbID: item.imdbID,
+          title: item.title,
+          poster: item.poster,
+        ),
+      ),
+    );
+
+    if (changed == true) {
+      _changed = true;
+      _load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<WatchlistItem> watchlist = _items
@@ -292,6 +310,7 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                         ...favorites.map(
                           (WatchlistItem item) => _WatchlistItemCard(
                             item: item,
+                            onTap: () => _openDetails(item),
                             onToggleFavorite: () => _toggleFavorite(item),
                             primaryLabel: item.status == 'completed'
                                 ? null
@@ -326,6 +345,7 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                         ...watchlist.map(
                           (WatchlistItem item) => _WatchlistItemCard(
                             item: item,
+                            onTap: () => _openDetails(item),
                             onToggleFavorite: () => _toggleFavorite(item),
                             primaryLabel: 'Mark Watched',
                             onPrimary: () => _markWatched(item),
@@ -358,6 +378,7 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                         ...watched.map(
                           (WatchlistItem item) => _WatchlistItemCard(
                             item: item,
+                            onTap: () => _openDetails(item),
                             onToggleFavorite: () => _toggleFavorite(item),
                             primaryLabel: null,
                             onPrimary: null,
@@ -377,6 +398,7 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
 class _WatchlistItemCard extends StatelessWidget {
   const _WatchlistItemCard({
     required this.item,
+    required this.onTap,
     required this.onToggleFavorite,
     required this.primaryLabel,
     required this.onPrimary,
@@ -385,6 +407,7 @@ class _WatchlistItemCard extends StatelessWidget {
   });
 
   final WatchlistItem item;
+  final VoidCallback onTap;
   final VoidCallback onToggleFavorite;
   final String? primaryLabel;
   final VoidCallback? onPrimary;
@@ -395,73 +418,98 @@ class _WatchlistItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool hasPoster = item.poster.trim().isNotEmpty;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: hasPoster
-                  ? Image.network(
-                      item.poster,
-                      width: 58,
-                      height: 84,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(Icons.movie),
-                    )
-                  : const SizedBox(
-                      width: 58,
-                      height: 84,
-                      child: Icon(Icons.movie),
-                    ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.title.isEmpty ? item.imdbID : item.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF111827),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: hasPoster
+                    ? Image.network(
+                        item.poster,
+                        width: 58,
+                        height: 84,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(Icons.movie),
+                      )
+                    : const SizedBox(
+                        width: 58,
+                        height: 84,
+                        child: Icon(Icons.movie),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.title.isEmpty ? item.imdbID : item.title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF111827),
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: onToggleFavorite,
-                        icon: Icon(
-                          item.isFavorite == true
-                              ? Icons.star
-                              : Icons.star_border,
-                          color: const Color(0xFF111827),
+                        IconButton(
+                          onPressed: onToggleFavorite,
+                          icon: Icon(
+                            item.isFavorite == true
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: const Color(0xFF111827),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      if (primaryLabel != null && onPrimary != null) ...[
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        if (primaryLabel != null && onPrimary != null) ...[
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: onPrimary,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF101114),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: Text(primaryLabel!),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ],
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: onPrimary,
+                            onPressed: onSecondary,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF101114),
-                              foregroundColor: Colors.white,
+                              backgroundColor: const Color(0xFFF3F4F6),
+                              foregroundColor: Colors.black,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               textStyle: const TextStyle(
                                 fontSize: 14,
@@ -469,38 +517,21 @@ class _WatchlistItemCard extends StatelessWidget {
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(
+                                  color: Color(0xFFD1D5DB),
+                                ),
                               ),
                             ),
-                            child: Text(primaryLabel!),
+                            child: Text(secondaryLabel),
                           ),
                         ),
-                        const SizedBox(width: 10),
                       ],
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: onSecondary,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFF3F4F6),
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            textStyle: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(color: Color(0xFFD1D5DB)),
-                            ),
-                          ),
-                          child: Text(secondaryLabel),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
