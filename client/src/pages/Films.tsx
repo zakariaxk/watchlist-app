@@ -104,7 +104,7 @@ const Films = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className="shows-page page-wrapper">
       <h1 className="page-heading">Movies</h1>
 
       {FILM_GENRES.map((genre) => (

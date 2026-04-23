@@ -104,7 +104,7 @@ const Shows = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className="shows-page page-wrapper">
       <h1 className="page-heading">Shows</h1>
 
       {SHOW_GENRES.map((genre) => (

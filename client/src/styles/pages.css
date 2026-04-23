@@ -4,7 +4,11 @@
    light background, large bold heading, 4-column genre card grid, footer. */
 
 /* ── Page wrapper ───────────────────────────────── */
-/* .page-wrapper is defined in main.css as a shared utility */
+
+/* pages.css */
+.shows-page {
+  max-width: 100%;
+}
 
 /* Heading at top of page */
 .page-heading {
@@ -91,6 +95,19 @@
 .genre-load-more-btn:hover:not(:disabled) {
   background: #333;
   opacity: 1;
+}
+
+.genre-row-scroll {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 12px;
+}
+
+.genre-row-item {
+  flex: 0 0 auto;      /* ← prevent items from shrinking */
+  width: 160px;        /* ← or whatever card width you prefer */
 }
 
 /* ── Footer ─────────────────────────────────────── */
