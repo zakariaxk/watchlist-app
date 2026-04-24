@@ -115,7 +115,6 @@ const Profile = () => {
 
   return (
     <div className="profile-page">
-      {/* Large heading matching mockup */}
       <h1 className="profile-heading">My Profile</h1>
 
       {/* Profile info card */}

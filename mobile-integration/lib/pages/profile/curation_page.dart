@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/auth_validation.dart';
 import '../../app/constants.dart';
 import '../../auth_api.dart';
+import '../watchlist/my_watchlist_page.dart';
 import '../../widgets/brand_mark.dart';
 
 class CurationPage extends StatefulWidget {
@@ -440,6 +441,34 @@ class _CurationPageState extends State<CurationPage> {
               child: const BrandMark(
                 assetPath: watchItLogoAssetPath,
                 width: 56,
+              ),
+            ),
+            const SizedBox(width: 14),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const MyWatchlistPage(),
+                  ),
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF101114),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: const Text(
+                'My Watchlist',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(width: 14),

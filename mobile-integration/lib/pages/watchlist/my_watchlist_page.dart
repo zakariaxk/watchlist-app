@@ -229,18 +229,24 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
 
   @override
   Widget build(BuildContext context) {
+    final List<WatchlistItem> favorites = _items
+        .where((WatchlistItem item) => item.isFavorite == true)
+        .toList();
     final List<WatchlistItem> watchlist = _items
-        .where((WatchlistItem item) => item.status != 'completed')
+        .where(
+          (WatchlistItem item) =>
+              item.isFavorite != true && item.status != 'completed',
+        )
         .toList();
     final List<WatchlistItem> watched = _items
         .where((WatchlistItem item) => item.status == 'completed')
         .toList();
-
-    final List<WatchlistItem> favorites = _items
-        .where((WatchlistItem item) => item.isFavorite == true)
+    final List<WatchlistItem> watchedOnly = watched
+        .where((WatchlistItem item) => item.isFavorite != true)
         .toList();
 
-    final bool showFavorites = widget.view == MyWatchlistView.favorites;
+    final bool showFavorites = widget.view == MyWatchlistView.all ||
+        widget.view == MyWatchlistView.favorites;
     final bool showWatchlist = showFavorites
         ? false
         : widget.view != MyWatchlistView.watched;
@@ -248,8 +254,12 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
         ? false
         : widget.view != MyWatchlistView.watchlist;
 
+    final bool showAllSections = widget.view == MyWatchlistView.all;
+    final bool showWatchlistSection = showAllSections || showWatchlist;
+    final bool showWatchedSection = showAllSections || showWatched;
+
     final String title = widget.view == MyWatchlistView.watchlist
-        ? 'Want to Watch'
+        ? 'Watchlist Media'
         : widget.view == MyWatchlistView.watched
         ? 'Already Watched'
         : widget.view == MyWatchlistView.favorites
@@ -298,6 +308,15 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
                     if (showFavorites) ...[
+                      const Text(
+                        'Favorites',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       if (favorites.isEmpty)
                         const Text(
                           'No favorites yet.',
@@ -323,9 +342,11 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                           ),
                         ),
                     ],
-                    if (showWatchlist) ...[
+                    if (showFavorites && showWatchlistSection)
+                      const SizedBox(height: 24),
+                    if (showWatchlistSection) ...[
                       const Text(
-                        'Watchlist',
+                        'Watchlist Media',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -354,11 +375,11 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                           ),
                         ),
                     ],
-                    if (showWatchlist && showWatched)
+                    if (showWatchlistSection && showWatchedSection)
                       const SizedBox(height: 24),
-                    if (showWatched) ...[
+                    if (showWatchedSection) ...[
                       const Text(
-                        'Watched',
+                        'Already Watched',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -366,7 +387,7 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      if (watched.isEmpty)
+                      if (watchedOnly.isEmpty)
                         const Text(
                           'No watched titles yet.',
                           style: TextStyle(
@@ -375,7 +396,7 @@ class _MyWatchlistPageState extends State<MyWatchlistPage> {
                           ),
                         )
                       else
-                        ...watched.map(
+                        ...watchedOnly.map(
                           (WatchlistItem item) => _WatchlistItemCard(
                             item: item,
                             onTap: () => _openDetails(item),
