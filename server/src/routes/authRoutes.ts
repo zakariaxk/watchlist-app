@@ -42,6 +42,21 @@ const createEmailVerificationToken = () => {
 	};
 };
 
+const queueVerificationEmail = (recipientEmail: string, rawToken: string): void => {
+	const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+	const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+
+	void sendVerificationEmail(recipientEmail, verificationLink)
+		.then((emailResult) => {
+			if (!emailResult.delivered) {
+				console.warn(`[email-verification] Verification email was not delivered for ${recipientEmail}`);
+			}
+		})
+		.catch((sendError) => {
+			console.error(`[email-verification] Verification email dispatch error for ${recipientEmail}:`, sendError);
+		});
+};
+
 const isStrongPassword = (password: string): boolean => {
 	return (
 		password.length >= 8 &&
@@ -73,18 +88,7 @@ router.post("/register", async (req: Request, res: Response) => {
 				existingUser.VerificationTokenExpires = verificationToken.expiresAt;
 				await existingUser.save();
 
-				const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
-				const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
-
-				void sendVerificationEmail(existingUser.email, verificationLink)
-					.then((emailResult) => {
-						if (!emailResult.delivered) {
-							console.warn(`[register] Verification email was not delivered for ${existingUser.email}`);
-						}
-					})
-					.catch((sendError) => {
-						console.error(`[register] Verification email dispatch error for ${existingUser.email}:`, sendError);
-					});
+				queueVerificationEmail(existingUser.email, verificationToken.rawToken);
 
 				return res.status(200).json({
 					message:
@@ -109,18 +113,7 @@ router.post("/register", async (req: Request, res: Response) => {
 		});
 		await newUser.save();
 
-		const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
-		const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
-
-		void sendVerificationEmail(newUser.email, verificationLink)
-			.then((emailResult) => {
-				if (!emailResult.delivered) {
-					console.warn(`[register] Verification email was not delivered for ${newUser.email}`);
-				}
-			})
-			.catch((sendError) => {
-				console.error(`[register] Verification email dispatch error for ${newUser.email}:`, sendError);
-			});
+		queueVerificationEmail(newUser.email, verificationToken.rawToken);
 
 		const token = jwt.sign({ id: newUser._id }, getJwtSecret(), {
 			expiresIn: "7d",
@@ -323,10 +316,7 @@ router.post("/resend-verification", async (req: Request, res: Response) => {
 		user.VerificationTokenExpires = verificationToken.expiresAt;
 		await user.save();
 
-		const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
-		const verificationLink = `${frontendUrl}/verify-email?token=${encodeURIComponent(verificationToken.rawToken)}`;
-
-		await sendVerificationEmail(user.email, verificationLink);
+		queueVerificationEmail(user.email, verificationToken.rawToken);
 
 		res.status(200).json({ message: GENERIC_RESEND_VERIFICATION_MESSAGE });
 	} catch (error) {
