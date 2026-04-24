@@ -20,58 +20,6 @@ const SHOW_GENRES = [
   { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
 ];
 
-const SHOW_GENRE_SEEDS: Record<string, string[]> = {
-  Action:      ['24', 'Reacher', 'Jack Ryan', 'Prison Break', 'The Boys'],
-  Comedy:      ['Seinfeld', 'The Office', 'Parks and Recreation', 'Brooklyn Nine-Nine', 'Arrested Development'],
-  Drama:       ['The Wire', 'Succession', 'Ozark', 'Better Call Saul', 'The Americans'],
-  'Sci-Fi':    ['Westworld', 'Dark', 'Black Mirror', 'The Expanse', 'Fringe'],
-  Romance:     ['Bridgerton', 'Normal People', 'Outlander', 'Fleabag', 'One Day'],
-  Documentary: ['Making a Murderer', 'The Last Dance', 'Wild Wild Country', 'Tiger King', 'The Jinx'],
-  Thriller:    ['Mindhunter', 'Killing Eve', 'Hannibal', 'The Sinner', 'You'],
-  Horror:      ['The Haunting of Hill House', 'Stranger Things', 'Midnight Mass', 'The Walking Dead', 'American Horror Story'],
-  Animation:   ['Arcane', 'Avatar The Last Airbender', 'Rick and Morty', 'Invincible', 'Castlevania'],
-  Crime:       ['The Wire', 'True Detective', 'Fargo', 'Peaky Blinders', 'The Sopranos'],
-  Fantasy:     ['Game of Thrones', 'The Witcher', 'House of the Dragon', 'His Dark Materials', 'Shadow and Bone'],
-  Superhero:   ['The Boys', 'Invincible', 'Daredevil', 'Loki', 'The Umbrella Academy'],
-};
-
-const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
-
-const getCached = (key: string): OmdbSearchResult[] | null => {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const { timestamp, data } = JSON.parse(raw);
-    if (Date.now() - timestamp > CACHE_TTL_MS) {
-      localStorage.removeItem(key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-const setCached = (key: string, data: OmdbSearchResult[]) => {
-  try {
-    localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
-  } catch {
-    // localStorage full or unavailable — fail silently
-  }
-};
-const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
-const fetchWithRetry = async (title: string, type: 'movie' | 'series', retries = 3, delay = 500) => {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const res = await searchMedia(title, type, 1);
-      return res;
-    } catch {
-      if (attempt < retries - 1) await sleep(delay * (attempt + 1));
-    }
-  }
-  return null;
-};
-
 // One row for a single genre
 const GenreRow = ({
   genre,
@@ -90,50 +38,25 @@ const GenreRow = ({
   const seenIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-  const load = async () => {
-    setLoading(true);
-    seenIds.current.clear();
-
-    const cacheKey = `watchit_shows_${genre}`;  // ← shows cache key
-    const cached = getCached(cacheKey);
-    if (cached) {
-      setResults(cached);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const seeds = SHOW_GENRE_SEEDS[genre] ?? [];
-      const fresh: OmdbSearchResult[] = [];
-
-      for (let i = 0; i < seeds.length; i++) {
-        await sleep(200);
-        try {
-          const res = await fetchWithRetry(seeds[i], 'series');  // ← series type
-          if (!res) continue;
-          for (const item of res.data.results) {
-            if (item.type === 'game') continue;
-            if (item.type === 'movie') continue;  // ← filter out movies
-            if (seenIds.current.has(item.imdbID)) continue;
-            seenIds.current.add(item.imdbID);
-            fresh.push(item);
-            break;
-          }
-          setResults([...fresh]);
-        } catch {
-          continue;
-        }
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await searchMedia(genre, 'series', 1);
+        const fresh = res.data.results.filter((item: OmdbSearchResult) => {
+          if (item.type === 'game') return false;
+          if (seenIds.current.has(item.imdbID)) return false;
+          seenIds.current.add(item.imdbID);
+          return true;
+        });
+        setResults(fresh);
+      } catch {
+        setError('Failed to load.');
+      } finally {
+        setLoading(false);
       }
-
-      setCached(cacheKey, fresh);
-    } catch {
-      setError('Failed to load.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  load();
-}, [genre]);
+    };
+    load();
+  }, [genre]);
 
   return (
     <section className="genre-row">
