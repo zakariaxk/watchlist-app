@@ -177,7 +177,6 @@ const Watchlist = () => {
                 <div className="watchlist-poster-placeholder">No Image</div>
               )}
 
-              {/* STATUS */}
               <select
                 className="status-select"
                 value={item.status}
@@ -196,7 +195,6 @@ const Watchlist = () => {
                 ))}
               </select>
 
-              {/* RATING */}
               <div className="rating-container">
                 {renderStars(item.userRating || 0, item._id)}
                 <span>{typeof item.userRating === 'number' ? item.userRating.toFixed(1) : 'No rating'}</span>
