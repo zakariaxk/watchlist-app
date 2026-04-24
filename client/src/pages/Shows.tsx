@@ -21,18 +21,43 @@ const SHOW_GENRES = [
 ];
 
 const SHOW_GENRE_SEEDS: Record<string, string[]> = {
-  Action:      ['24', 'Reacher', 'Jack Ryan', 'Strike Back', 'The Boys', 'Narcos', 'Prison Break', 'Alias', 'Burn Notice', 'Chuck'],
-  Comedy:      ['Seinfeld', 'The Office', 'Parks and Recreation', 'Arrested Development', 'Brooklyn Nine-Nine', 'Schitts Creek', 'Its Always Sunny', 'Frasier', 'Curb Your Enthusiasm', 'What We Do in the Shadows'],
-  Drama:       ['The Wire', 'Succession', 'Ozark', 'The Crown', 'Yellowstone', 'Mindhunter', 'Mare of Easttown', 'Severance', 'Better Call Saul', 'The Americans'],
-  'Sci-Fi':    ['Westworld', 'Dark', 'Black Mirror', 'The Expanse', 'Fringe', 'Altered Carbon', 'Orphan Black', 'Battlestar Galactica', 'Devs', 'Severance'],
-  Romance:     ['Bridgerton', 'Normal People', 'Virgin River', 'Emily in Paris', 'Outlander', 'Jane the Virgin', 'Fleabag', 'Sweet Magnolias', 'Ginny and Georgia', 'One Day'],
-  Documentary: ['Making a Murderer', 'The Last Dance', 'Wild Wild Country', 'Tiger King', 'The Jinx', 'Chefs Table', 'Icarus', 'Allen v Farrow', 'The Vow', 'Formula 1: Drive to Survive'],
-  Thriller:    ['Mindhunter', 'Killing Eve', 'Hannibal', 'The Sinner', 'Sharp Objects', 'You', 'Bloodline', 'Ozark', 'The Fall', 'Luther'],
-  Horror:      ['The Haunting of Hill House', 'Stranger Things', 'American Horror Story', 'The Walking Dead', 'Midnight Mass', 'Ratched', 'Channel Zero', 'Marianne', 'The Terror', 'Debris'],
-  Animation:   ['Arcane', 'Avatar The Last Airbender', 'BoJack Horseman', 'Rick and Morty', 'Gravity Falls', 'Castlevania', 'Invincible', 'Over the Garden Wall', 'Primal', 'The Legend of Korra'],
-  Crime:       ['The Wire', 'True Detective', 'Fargo', 'Narcos', 'Peaky Blinders', 'The Sopranos', 'Mindhunter', 'The Shield', 'Ozark', 'Sneaky Pete'],
-  Fantasy:     ['Game of Thrones', 'The Witcher', 'House of the Dragon', 'Shadow and Bone', 'The Wheel of Time', 'Merlin', 'His Dark Materials', 'Carnival Row', 'Cursed', 'The Shannara Chronicles'],
-  Superhero:   ['The Boys', 'Invincible', 'Daredevil', 'Loki', 'WandaVision', 'Peacemaker', 'The Umbrella Academy', 'Legion', 'Agents of Shield', 'Titans'],
+  Action:      ['24', 'Reacher', 'Jack Ryan', 'Prison Break', 'The Boys'],
+  Comedy:      ['Seinfeld', 'The Office', 'Parks and Recreation', 'Brooklyn Nine-Nine', 'Arrested Development'],
+  Drama:       ['The Wire', 'Succession', 'Ozark', 'Better Call Saul', 'The Americans'],
+  'Sci-Fi':    ['Westworld', 'Dark', 'Black Mirror', 'The Expanse', 'Fringe'],
+  Romance:     ['Bridgerton', 'Normal People', 'Outlander', 'Fleabag', 'One Day'],
+  Documentary: ['Making a Murderer', 'The Last Dance', 'Wild Wild Country', 'Tiger King', 'The Jinx'],
+  Thriller:    ['Mindhunter', 'Killing Eve', 'Hannibal', 'The Sinner', 'You'],
+  Horror:      ['The Haunting of Hill House', 'Stranger Things', 'Midnight Mass', 'The Walking Dead', 'American Horror Story'],
+  Animation:   ['Arcane', 'Avatar The Last Airbender', 'Rick and Morty', 'Invincible', 'Castlevania'],
+  Crime:       ['The Wire', 'True Detective', 'Fargo', 'Peaky Blinders', 'The Sopranos'],
+  Fantasy:     ['Game of Thrones', 'The Witcher', 'House of the Dragon', 'His Dark Materials', 'Shadow and Bone'],
+  Superhero:   ['The Boys', 'Invincible', 'Daredevil', 'Loki', 'The Umbrella Academy'],
+};
+
+const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+
+const getCached = (key: string): OmdbSearchResult[] | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { timestamp, data } = JSON.parse(raw);
+    if (Date.now() - timestamp > CACHE_TTL_MS) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+const setCached = (key: string, data: OmdbSearchResult[]) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
+  } catch {
+    // localStorage full or unavailable — fail silently
+  }
 };
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -56,31 +81,40 @@ const GenreRow = ({
   useEffect(() => {
   const load = async () => {
     setLoading(true);
+    seenIds.current.clear();
+
+    const cacheKey = `watchit_shows_${genre}`;  // ← shows cache key
+    const cached = getCached(cacheKey);
+    if (cached) {
+      setResults(cached);
+      setLoading(false);
+      return;
+    }
+
     try {
       const seeds = SHOW_GENRE_SEEDS[genre] ?? [];
       const fresh: OmdbSearchResult[] = [];
-      const BATCH_SIZE = 3;
-      const DELAY_MS = 300;
 
-      for (let i = 0; i < seeds.length; i += BATCH_SIZE) {
-        const batch = seeds.slice(i, i + BATCH_SIZE);
-        const responses = await Promise.allSettled(
-          batch.map((title) => searchMedia(title, 'series', 1))
-        );
-        for (const r of responses) {
-          if (r.status !== 'fulfilled') continue;
-          for (const item of r.value.data.results) {
+      for (let i = 0; i < seeds.length; i++) {
+        await sleep(200);
+        try {
+          const res = await fetchWithRetry(seeds[i], 'series');  // ← series type
+          if (!res) continue;
+          for (const item of res.data.results) {
             if (item.type === 'game') continue;
-            if (item.type === 'movie') continue;
+            if (item.type === 'movie') continue;  // ← filter out movies
             if (seenIds.current.has(item.imdbID)) continue;
             seenIds.current.add(item.imdbID);
             fresh.push(item);
             break;
           }
+          setResults([...fresh]);
+        } catch {
+          continue;
         }
-        if (i + BATCH_SIZE < seeds.length) await sleep(DELAY_MS);
       }
-      setResults(fresh);
+
+      setCached(cacheKey, fresh);
     } catch {
       setError('Failed to load.');
     } finally {

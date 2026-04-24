@@ -21,18 +21,43 @@ const FILM_GENRES = [
 ];
 
 const MOVIE_GENRE_SEEDS: Record<string, string[]> = {
-  Action:      ['Mad Max Fury Road', 'John Wick', 'The Dark Knight', 'Mission Impossible Fallout', 'Die Hard', 'Heat', 'Gladiator', 'Top Gun Maverick', 'The Raid', 'Atomic Blonde'],
-  Comedy:      ['Superbad', 'The Grand Budapest Hotel', 'Bridesmaids', 'Game Night', 'Step Brothers', 'The Nice Guys', 'Knives Out', 'What We Do in the Shadows', 'Palm Springs', 'Ticket to Paradise'],
-  Drama:       ['The Shawshank Redemption', 'Schindlers List', 'There Will Be Blood', 'No Country for Old Men', 'Moonlight', 'Marriage Story', 'Manchester by the Sea', 'The Godfather', 'Nomadland', 'Parasite'],
-  'Sci-Fi':    ['Interstellar', 'Inception', 'The Matrix', 'Arrival', 'Blade Runner 2049', 'Ex Machina', 'Dune', 'Annihilation', 'Edge of Tomorrow', 'District 9'],
-  Romance:     ['La La Land', 'About Time', 'Crazy Rich Asians', 'The Notebook', 'Before Sunrise', 'Eternal Sunshine of the Spotless Mind', 'Pride and Prejudice', 'Call Me By Your Name', 'Portrait of a Lady on Fire', 'Atonement'],
-  Documentary: ['No Other Land', 'Free Solo', 'The Act of Killing', '13th', 'Amy', 'Searching for Sugar Man', 'I Am Not Your Negro', 'Jiro Dreams of Sushi', 'The Imposter', 'Honeyland'],
-  Thriller:    ['Gone Girl', 'Prisoners', 'Zodiac', 'Se7en', 'Parasite', 'Nocturnal Animals', 'Knives Out', 'The Girl with the Dragon Tattoo', 'Sicario', 'Tinker Tailor Soldier Spy'],
-  Horror:      ['Hereditary', 'Get Out', 'The Witch', 'Midsommar', 'A Quiet Place', 'It Follows', 'The Babadook', 'Us', 'Sinister', 'The Conjuring'],
-  Animation:   ['Spider-Man Into the Spider-Verse', 'Spirited Away', 'The Lion King', 'WALL-E', 'Coco', 'Princess Mononoke', 'Toy Story', 'Howls Moving Castle', 'Klaus', 'Wolfwalkers'],
-  Crime:       ['The Godfather', 'Goodfellas', 'Heat', 'No Country for Old Men', 'Prisoners', 'Zodiac', 'The Departed', 'Sicario', 'Blood Simple', 'Memories of Murder'],
-  Fantasy:     ['The Lord of the Rings', 'Pan Labyrinth', 'Princess Mononoke', 'The Shape of Water', 'Stardust', 'Big Fish', 'The Princess Bride', 'Willow', 'Labyrinth', 'The NeverEnding Story'],
-  Superhero:   ['The Dark Knight', 'Spider-Man Into the Spider-Verse', 'Logan', 'Avengers Endgame', 'Thor Ragnarok', 'Black Panther', 'Guardians of the Galaxy', 'The Incredibles', 'Unbreakable', 'Shazam'],
+  Action:      ['Mad Max Fury Road', 'John Wick', 'The Dark Knight', 'Die Hard', 'Gladiator'],
+  Comedy:      ['Superbad', 'The Grand Budapest Hotel', 'Bridesmaids', 'Step Brothers', 'The Nice Guys'],
+  Drama:       ['The Shawshank Redemption', 'Schindlers List', 'The Godfather', 'Moonlight', 'Parasite'],
+  'Sci-Fi':    ['Interstellar', 'Inception', 'The Matrix', 'Arrival', 'Blade Runner 2049'],
+  Romance:     ['La La Land', 'About Time', 'The Notebook', 'Before Sunrise', 'Pride and Prejudice'],
+  Documentary: ['Free Solo', '13th', 'Amy', 'Searching for Sugar Man', 'Jiro Dreams of Sushi'],
+  Thriller:    ['Gone Girl', 'Prisoners', 'Zodiac', 'Se7en', 'Sicario'],
+  Horror:      ['Hereditary', 'Get Out', 'The Witch', 'Midsommar', 'A Quiet Place'],
+  Animation:   ['Spider-Man Into the Spider-Verse', 'Spirited Away', 'WALL-E', 'Coco', 'Toy Story'],
+  Crime:       ['The Godfather', 'Goodfellas', 'The Departed', 'Zodiac', 'Heat'],
+  Fantasy:     ['The Lord of the Rings', 'Pan Labyrinth', 'The Princess Bride', 'Big Fish', 'Stardust'],
+  Superhero:   ['The Dark Knight', 'Spider-Man Into the Spider-Verse', 'Logan', 'Avengers Endgame', 'The Incredibles'],
+};
+
+const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+
+const getCached = (key: string): OmdbSearchResult[] | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { timestamp, data } = JSON.parse(raw);
+    if (Date.now() - timestamp > CACHE_TTL_MS) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+const setCached = (key: string, data: OmdbSearchResult[]) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data }));
+  } catch {
+    // localStorage full or unavailable — fail silently
+  }
 };
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -56,20 +81,26 @@ const GenreRow = ({
   useEffect(() => {
   const load = async () => {
     setLoading(true);
+    seenIds.current.clear();
+
+    const cacheKey = `watchit_movies_${genre}`; // use watchit_shows_ in Shows.tsx
+    const cached = getCached(cacheKey);
+    if (cached) {
+      setResults(cached);
+      setLoading(false);
+      return; // skip all requests
+    }
+
     try {
       const seeds = MOVIE_GENRE_SEEDS[genre] ?? [];
       const fresh: OmdbSearchResult[] = [];
-      const BATCH_SIZE = 3;
-      const DELAY_MS = 300;
 
-      for (let i = 0; i < seeds.length; i += BATCH_SIZE) {
-        const batch = seeds.slice(i, i + BATCH_SIZE);
-        const responses = await Promise.allSettled(
-          batch.map((title) => searchMedia(title, 'movie', 1))
-        );
-        for (const r of responses) {
-          if (r.status !== 'fulfilled') continue;
-          for (const item of r.value.data.results) {
+      for (let i = 0; i < seeds.length; i++) {
+        await sleep(200);
+        try {
+          const res = await fetchWithRetry(seeds[i], 'movie');
+          if (!res) continue;
+          for (const item of res.data.results) {
             if (item.type === 'game') continue;
             if (item.type === 'series') continue;
             if (seenIds.current.has(item.imdbID)) continue;
@@ -77,10 +108,13 @@ const GenreRow = ({
             fresh.push(item);
             break;
           }
+          setResults([...fresh]);
+        } catch {
+          continue;
         }
-        if (i + BATCH_SIZE < seeds.length) await sleep(DELAY_MS);
       }
-      setResults(fresh);
+
+      setCached(cacheKey, fresh); // save to cache after all fetches complete
     } catch {
       setError('Failed to load.');
     } finally {
