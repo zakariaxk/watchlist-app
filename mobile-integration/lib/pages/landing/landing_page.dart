@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/auth_validation.dart';
 import '../../auth_api.dart';
 import '../../widgets/brand_mark.dart';
 import '../profile/curation_page.dart';
@@ -240,7 +241,7 @@ class _LogInFormState extends State<_LogInForm> {
 
   Future<void> _submit() async {
     final String username = _usernameController.text.trim();
-    final String password = _passwordController.text.trim();
+    final String password = _passwordController.text;
 
     setState(() {
       _usernameError = username.isEmpty ? 'Username is required' : null;
@@ -396,9 +397,7 @@ class _SignUpFormState extends State<_SignUpForm> {
   Future<void> _submit() async {
     final String email = _emailController.text.trim();
     final String username = _usernameController.text.trim();
-    final String password = _passwordController.text.trim();
-
-    final List<String> missingFields = <String>[];
+    final String password = _passwordController.text;
 
     String? nextEmailError;
     String? nextUsernameError;
@@ -406,15 +405,16 @@ class _SignUpFormState extends State<_SignUpForm> {
 
     if (email.isEmpty) {
       nextEmailError = 'Email is required';
-      missingFields.add('Email');
+    } else if (!AuthValidation.isEmailFormatValid(email)) {
+      nextEmailError = 'Please enter a valid email address.';
     }
     if (username.isEmpty) {
       nextUsernameError = 'Username is required';
-      missingFields.add('Username');
     }
     if (password.isEmpty) {
       nextPasswordError = 'Password is required';
-      missingFields.add('Password');
+    } else if (!AuthValidation.isPasswordStrong(password)) {
+      nextPasswordError = 'Password does not meet all requirements.';
     }
 
     setState(() {
@@ -424,7 +424,9 @@ class _SignUpFormState extends State<_SignUpForm> {
       _serverError = null;
     });
 
-    if (missingFields.isNotEmpty) {
+    if (nextEmailError != null ||
+        nextUsernameError != null ||
+        nextPasswordError != null) {
       return;
     }
 
@@ -473,6 +475,11 @@ class _SignUpFormState extends State<_SignUpForm> {
 
   @override
   Widget build(BuildContext context) {
+    final String password = _passwordController.text;
+    final bool allPasswordRequirementsPassed = AuthValidation.isPasswordStrong(
+      password,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -482,10 +489,15 @@ class _SignUpFormState extends State<_SignUpForm> {
           hint: 'xxx@email.com',
           controller: _emailController,
           errorText: _emailError,
+          keyboardType: TextInputType.emailAddress,
           onChanged: (value) {
-            if (value.trim().isNotEmpty && _emailError != null) {
+            if (_emailError != null) {
               setState(() {
-                _emailError = null;
+                _emailError = value.trim().isEmpty
+                    ? 'Email is required'
+                    : AuthValidation.isEmailFormatValid(value.trim())
+                    ? null
+                    : 'Please enter a valid email address.';
               });
             }
           },
@@ -514,18 +526,60 @@ class _SignUpFormState extends State<_SignUpForm> {
           errorText: _passwordError,
           obscureText: true,
           onChanged: (value) {
-            if (value.trim().isNotEmpty && _passwordError != null) {
-              setState(() {
-                _passwordError = null;
-              });
-            }
+            setState(() {
+              if (_passwordError != null) {
+                _passwordError = value.isEmpty
+                    ? 'Password is required'
+                    : AuthValidation.isPasswordStrong(value)
+                    ? null
+                    : 'Password does not meet all requirements.';
+              }
+            });
           },
         ),
+        if (password.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ...AuthValidation.passwordRequirements.map((
+            PasswordRequirement requirement,
+          ) {
+            final bool passed = requirement.test(password);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    passed ? Icons.check : Icons.close,
+                    size: 18,
+                    color: passed
+                        ? const Color(0xFF15803D)
+                        : const Color(0xFFB91C1C),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      requirement.label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: passed
+                            ? const Color(0xFF15803D)
+                            : const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
         const SizedBox(height: 24),
         SizedBox(
           height: 56,
           child: ElevatedButton(
-            onPressed: _isSubmitting ? null : _submit,
+            onPressed: _isSubmitting || !allPasswordRequirementsPassed
+                ? null
+                : _submit,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2B2B2D),
               foregroundColor: Colors.white,
@@ -582,6 +636,7 @@ class _SignUpInput extends StatelessWidget {
     this.errorText,
     this.obscureText = false,
     this.onChanged,
+    this.keyboardType,
   });
 
   final String hint;
@@ -589,6 +644,7 @@ class _SignUpInput extends StatelessWidget {
   final String? errorText;
   final bool obscureText;
   final ValueChanged<String>? onChanged;
+  final TextInputType? keyboardType;
 
   @override
   Widget build(BuildContext context) {
@@ -596,6 +652,7 @@ class _SignUpInput extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       obscureText: obscureText,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hint,
         errorText: errorText,

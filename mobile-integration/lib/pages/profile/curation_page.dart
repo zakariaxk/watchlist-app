@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/auth_validation.dart';
 import '../../app/constants.dart';
 import '../../auth_api.dart';
 import '../../widgets/brand_mark.dart';
@@ -597,6 +598,12 @@ class _ProfileEditPageState extends State<_ProfileEditPage> {
       });
       return;
     }
+    if (!AuthValidation.isEmailFormatValid(email)) {
+      setState(() {
+        _error = 'Please enter a valid email address.';
+      });
+      return;
+    }
 
     Navigator.of(context).pop(
       _ProfileEditResult(email: email, profileVisibility: _selectedVisibility),
@@ -624,6 +631,13 @@ class _ProfileEditPageState extends State<_ProfileEditPage> {
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) {
+                    if (_error != null) {
+                      setState(() {
+                        _error = null;
+                      });
+                    }
+                  },
                   decoration: const InputDecoration(labelText: 'Email'),
                 ),
                 const SizedBox(height: 14),
