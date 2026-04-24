@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/auth_validation.dart';
 import '../../app/constants.dart';
 import '../../auth_api.dart';
+import 'friend_profile_page.dart';
 import '../watchlist/my_watchlist_page.dart';
 import '../../widgets/brand_mark.dart';
 
@@ -86,7 +87,9 @@ class _CurationPageState extends State<CurationPage> {
         AuthSession.clear();
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       } else {
-        Navigator.of(context).pushNamedAndRemoveUntil('/feed', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/feed', (route) => false);
       }
     } on AuthApiException catch (error) {
       if (!mounted) {
@@ -412,6 +415,32 @@ class _CurationPageState extends State<CurationPage> {
     }
   }
 
+  Future<void> _openFriendProfile(FriendUser user) async {
+    final bool? removed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => FriendProfilePage(
+          friendId: user.id,
+          initialUsername: user.username,
+          initialVisibility: user.profileVisibility,
+        ),
+      ),
+    );
+
+    if (!mounted || removed != true) {
+      return;
+    }
+
+    setState(() {
+      _friends = _friends
+          .where((FriendUser friend) => friend.id != user.id)
+          .toList();
+    });
+
+    if (_userSearchQuery.trim().length >= 2) {
+      await _searchUsers(_userSearchQuery);
+    }
+  }
+
   void _showSnackBar(String message) {
     if (!mounted) {
       return;
@@ -447,9 +476,7 @@ class _CurationPageState extends State<CurationPage> {
             FilledButton(
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const MyWatchlistPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const MyWatchlistPage()),
                 );
               },
               style: FilledButton.styleFrom(
@@ -465,10 +492,7 @@ class _CurationPageState extends State<CurationPage> {
               ),
               child: const Text(
                 'My Watchlist',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -776,6 +800,7 @@ class _CurationPageState extends State<CurationPage> {
                       username: user.username,
                       profileVisibility: user.profileVisibility,
                       actionLabel: isSubmitting ? 'Removing...' : 'Remove',
+                      onTap: () => _openFriendProfile(user),
                       onAction: isSubmitting ? null : () => _unfollowUser(user),
                     ),
                   );
@@ -953,86 +978,98 @@ class _UserActionCard extends StatelessWidget {
     required this.username,
     required this.profileVisibility,
     required this.actionLabel,
+    this.onTap,
     this.onAction,
   });
 
   final String username;
   final String profileVisibility;
   final String actionLabel;
+  final VoidCallback? onTap;
   final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
     final bool isPrivate = profileVisibility.trim().toLowerCase() == 'private';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF3F4F6),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              username.isNotEmpty ? username[0].toUpperCase() : '?',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111827),
-              ),
-            ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  username,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF3F4F6),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  username.isNotEmpty ? username[0].toUpperCase() : '?',
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF111827),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  isPrivate ? 'Private profile' : 'Public profile',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF6B7280),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isPrivate ? 'Private profile' : 'Public profile',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                onPressed: onAction,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF111827),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          FilledButton(
-            onPressed: onAction,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF111827),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                child: Text(
+                  actionLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
-            ),
-            child: Text(
-              actionLabel,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

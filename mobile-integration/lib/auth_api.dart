@@ -65,17 +65,21 @@ class PublicUser {
     required this.id,
     required this.username,
     required this.profileVisibility,
+    this.createdAt,
   });
 
   final String id;
   final String username;
   final String profileVisibility;
+  final DateTime? createdAt;
 
   factory PublicUser.fromJson(Map<String, dynamic> json) {
+    final String rawCreatedAt = json['createdAt']?.toString() ?? '';
     return PublicUser(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       username: json['username']?.toString() ?? 'Unknown user',
       profileVisibility: json['profileVisibility']?.toString() ?? 'public',
+      createdAt: DateTime.tryParse(rawCreatedAt),
     );
   }
 }
@@ -342,6 +346,7 @@ class AuthApi {
     '$baseUrl/auth/profile/preferences',
   );
   static final Uri _usersSearchUri = Uri.parse('$baseUrl/users/search');
+  static final Uri _usersUri = Uri.parse('$baseUrl/users');
   static final Uri _friendsFeedUri = Uri.parse('$baseUrl/feed/friends');
   static final Uri _friendsUri = Uri.parse('$baseUrl/friends');
   static final Uri _mediaSearchUri = Uri.parse('$baseUrl/media/search');
@@ -352,6 +357,14 @@ class AuthApi {
 
   static Uri _friendUri(String id) =>
       Uri.parse('$baseUrl/friends/${Uri.encodeComponent(id)}');
+
+  static Uri _publicUserUri(String userId) => _usersUri.replace(
+    path: '${_usersUri.path}/${Uri.encodeComponent(userId)}',
+  );
+
+  static Uri _userWatchlistUri(String userId) => _watchlistUri.replace(
+    path: '${_watchlistUri.path}/${Uri.encodeComponent(userId)}',
+  );
 
   static Uri _mediaDetailUri(String imdbID) =>
       Uri.parse('$baseUrl/media/${Uri.encodeComponent(imdbID)}');
@@ -536,6 +549,36 @@ class AuthApi {
 
       final String backendMessage =
           payload['message']?.toString() ?? 'Failed to search users.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<PublicUser> fetchPublicUser(String userId) async {
+    final String trimmed = userId.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing user id.');
+    }
+
+    try {
+      final http.Response response = await http
+          .get(_publicUserUri(trimmed), headers: _headers())
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return PublicUser.fromJson(payload);
+      }
+
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to load user profile.';
       throw AuthApiException(backendMessage);
     } on AuthApiException {
       rethrow;
@@ -903,6 +946,47 @@ class AuthApi {
             (WatchlistItem item) => favorites.contains(item.imdbID)
                 ? item.copyWith(isFavorite: true)
                 : item,
+          )
+          .toList();
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<List<WatchlistItem>> fetchUserWatchlist(String userId) async {
+    final String trimmed = userId.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing user id.');
+    }
+
+    try {
+      final http.Response response = await http
+          .get(_userWatchlistUri(trimmed), headers: _headers())
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final Map<String, dynamic> payload = _decodeJson(response.body);
+        final String backendMessage =
+            payload['message']?.toString() ?? 'Failed to fetch watchlist.';
+        throw AuthApiException(backendMessage);
+      }
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        return <WatchlistItem>[];
+      }
+
+      return decoded
+          .whereType<Map>()
+          .map(
+            (dynamic item) =>
+                WatchlistItem.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList();
     } on AuthApiException {
