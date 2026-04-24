@@ -194,7 +194,7 @@ router.get("/:userId", async (req: AuthRequest, res: Response) => {
 // Add to watchlist
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { imdbID, status, userRating, title, poster } = req.body;
+		const { imdbID, status, userRating, title, poster, isFavorite } = req.body;
 		const userId = req.user?.id;
 
 		if (watchlistDebug) {
@@ -232,6 +232,7 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 			userRating,
 			title: incomingTitle || metadata.title,
 			poster: incomingPoster || metadata.poster || "",
+			isFavorite: typeof isFavorite === "boolean" ? isFavorite : undefined,
 		});
 
 		await watchlistItem.save();
@@ -244,16 +245,31 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 // Update watchlist item
 router.put("/:id", authenticate, async (req: AuthRequest, res: Response) => {
 	try {
-		const { status, userRating } = req.body;
+		const { status, userRating, isFavorite } = req.body;
 		const userId = req.user?.id;
 
 		if (!userId) {
 			return res.status(401).json({ message: "Unauthorized" });
 		}
 
+		const update: Record<string, unknown> = {};
+		if (typeof status === "string") {
+			update.status = status;
+		}
+		if (typeof userRating === "number") {
+			update.userRating = userRating;
+		}
+		if (typeof isFavorite === "boolean") {
+			update.isFavorite = isFavorite;
+		}
+
+		if (Object.keys(update).length == 0) {
+			return res.status(400).json({ message: "No updates provided" });
+		}
+
 		const watchlistItem = await Watchlist.findOneAndUpdate(
 			{ _id: req.params.id, userId },
-			{ status, userRating },
+			update,
 			{ new: true }
 		);
 

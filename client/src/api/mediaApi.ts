@@ -55,6 +55,7 @@ export interface WatchlistItem {
   imdbID: string;
   status: string;
   userRating?: number;
+  isFavorite?: boolean;
   dateAdded: string;
   title?: string;
   poster?: string;
@@ -188,11 +189,21 @@ export const getMyWatchlist = () => {
   return apiClient.get<WatchlistItem[]>('watchlist');
 };
 
-export const addToWatchlist = (data: { imdbID: string; status?: string; userRating?: number; title?: string; poster?: string }) => {
+export const addToWatchlist = (data: {
+  imdbID: string;
+  status?: string;
+  userRating?: number;
+  title?: string;
+  poster?: string;
+  isFavorite?: boolean;
+}) => {
   return apiClient.post<WatchlistItem>('watchlist', data);
 };
 
-export const updateWatchlistItem = (id: string, data: { status?: string; userRating?: number }) => {
+export const updateWatchlistItem = (
+  id: string,
+  data: { status?: string; userRating?: number; isFavorite?: boolean },
+) => {
   return apiClient.put<WatchlistItem>(`watchlist/${id}`, data);
 };
 

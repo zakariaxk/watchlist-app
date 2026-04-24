@@ -26,6 +26,10 @@ const watchlistSchema = new mongoose.Schema({
 	poster: {
 		type: String,
 	},
+	isFavorite: {
+		type: Boolean,
+		default: false,
+	},
 	dateAdded: {
 		type: Date,
 		default: Date.now,
