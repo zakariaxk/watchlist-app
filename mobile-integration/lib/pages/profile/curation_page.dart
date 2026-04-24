@@ -471,16 +471,6 @@ class _CurationPageState extends State<CurationPage> {
                 ),
               ),
             ),
-            const SizedBox(width: 14),
-            const Text(
-              'My Profile',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                decoration: TextDecoration.underline,
-                color: Color(0xFF374151),
-              ),
-            ),
           ],
         ),
       ),
