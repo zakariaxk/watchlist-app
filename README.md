@@ -167,3 +167,4 @@ In production, Express serves `client/dist`, exposes the API under `/api`, enfor
 
 - Improved search with better ranking and filters
 - Data enrichment to reduce repeated OMDb lookups and provide richer cached metadata
+- Movie/show recommendation system
