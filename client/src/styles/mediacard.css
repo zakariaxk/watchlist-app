@@ -4,6 +4,7 @@
    returns no image or an invalid URL. */
 
 .media-card {
+  height: 426px;
   background: white;
   border-radius: 8px;
   border: 1px solid #ebebeb;
