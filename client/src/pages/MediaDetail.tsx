@@ -70,8 +70,9 @@ const MediaDetail = () => {
             newComment: '',
           }))
         );
-      } catch (err) {
-        setError('Failed to load media details');
+      } catch (err: unknown) {
+        const axiosError = err as any;
+        setError(axiosError.response?.data?.message || 'Failed to load media details');
       } finally {
         setLoading(false);
       }

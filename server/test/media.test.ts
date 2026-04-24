@@ -24,6 +24,16 @@ describe("Media routes", () => {
 			const urlString = String(url);
 
 			if (urlString.includes("&s=")) {
+				if (urlString.includes("&s=limit-hit")) {
+					return {
+						ok: true,
+						json: async () => ({
+							Response: "False",
+							Error: "Request limit reached!",
+						}),
+					} as any;
+				}
+
 				return {
 					ok: true,
 					json: async () => ({
@@ -56,6 +66,16 @@ describe("Media routes", () => {
 				} as any;
 			}
 
+			if (urlString.includes("&i=ttlimit0001")) {
+				return {
+					ok: true,
+					json: async () => ({
+						Response: "False",
+						Error: "Request limit reached!",
+					}),
+				} as any;
+			}
+
 			return { ok: false, json: async () => ({}) } as any;
 		}) as any;
 	});
@@ -82,6 +102,15 @@ describe("Media routes", () => {
 		assert.equal(res.body.results[0].imdbID, "tt1375666");
 	});
 
+	it("returns a controlled 429 when the OMDb daily limit is reached during search", async () => {
+		const res = await request(app).get("/api/media/search").query({ title: "limit-hit" });
+		assert.equal(res.status, 429);
+		assert.deepEqual(res.body, {
+			code: "OMDB_RATE_LIMIT_REACHED",
+			message: "OMDb daily request limit reached. Please try again later.",
+		});
+	});
+
 	it("fetches details and upserts minimal Media document", async () => {
 		const res = await request(app).get("/api/media/tt1375666");
 		assert.equal(res.status, 200);
@@ -93,5 +122,14 @@ describe("Media routes", () => {
 		assert.ok(dbMedia);
 		assert.equal(dbMedia?.title, "Inception");
 		assert.equal(dbMedia?.poster, "https://example.com/poster.jpg");
+	});
+
+	it("returns a controlled 429 when the OMDb daily limit is reached for details", async () => {
+		const res = await request(app).get("/api/media/ttlimit0001");
+		assert.equal(res.status, 429);
+		assert.deepEqual(res.body, {
+			code: "OMDB_RATE_LIMIT_REACHED",
+			message: "OMDb daily request limit reached. Please try again later.",
+		});
 	});
 });
