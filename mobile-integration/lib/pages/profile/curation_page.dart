@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/auth_validation.dart';
 import '../../app/constants.dart';
 import '../../auth_api.dart';
 import '../../widgets/brand_mark.dart';
-import '../watchlist/my_watchlist_page.dart';
 
 class CurationPage extends StatefulWidget {
   const CurationPage({super.key, required this.saveOnNext});
@@ -37,28 +38,14 @@ class _CurationPageState extends State<CurationPage> {
   String? _serverError;
   bool _isProfileLoading = false;
   bool _isProfileSaving = false;
+  bool _isSearchingUsers = false;
   String _profileEmail = '';
   String _profileVisibility = 'public';
-  List<WatchlistItem> _watchlistItems = <WatchlistItem>[];
-
-  String _formatTitleCount(int count) {
-    if (count == 1) {
-      return '1 title';
-    }
-    return '$count titles';
-  }
-
-  int _countByStatus(String status) {
-    return _watchlistItems
-        .where((WatchlistItem item) => item.status == status)
-        .length;
-  }
-
-  int _countFavorites() {
-    return _watchlistItems
-        .where((WatchlistItem item) => item.isFavorite == true)
-        .length;
-  }
+  String _userSearchQuery = '';
+  String? _friendActionUserId;
+  List<FriendUser> _friends = <FriendUser>[];
+  List<PublicUser> _userSearchResults = <PublicUser>[];
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -66,6 +53,12 @@ class _CurationPageState extends State<CurationPage> {
     if (!widget.saveOnNext) {
       _loadProfile();
     }
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _submitGenres() async {
@@ -127,7 +120,7 @@ class _CurationPageState extends State<CurationPage> {
 
     try {
       final Map<String, dynamic> profile = await AuthApi.fetchProfile();
-      final List<WatchlistItem> watchlist = await AuthApi.fetchMyWatchlist();
+      final List<FriendUser> friends = await AuthApi.fetchFriends();
       if (!mounted) {
         return;
       }
@@ -137,7 +130,7 @@ class _CurationPageState extends State<CurationPage> {
             profile['profileVisibility']?.toString().trim().toLowerCase() ??
             _profileVisibility;
         _profileVisibility = visibility == 'private' ? 'private' : 'public';
-        _watchlistItems = watchlist;
+        _friends = friends;
       });
     } on AuthApiException catch (error) {
       if (!mounted) {
@@ -244,6 +237,180 @@ class _CurationPageState extends State<CurationPage> {
     }
   }
 
+  Future<void> _searchUsers(String query) async {
+    final String trimmed = query.trim();
+    _searchDebounce?.cancel();
+
+    setState(() {
+      _userSearchQuery = query;
+      if (trimmed.length < 2) {
+        _isSearchingUsers = false;
+        _userSearchResults = <PublicUser>[];
+      }
+    });
+
+    if (trimmed.length < 2) {
+      return;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () async {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSearchingUsers = true;
+      });
+
+      try {
+        final String? currentUserId =
+            AuthSession.currentUser?['_id']?.toString() ??
+            AuthSession.currentUser?['id']?.toString();
+        final Set<String> friendIds = _friends
+            .map((FriendUser friend) => friend.id)
+            .toSet();
+        final List<PublicUser> users = await AuthApi.searchUsers(trimmed);
+
+        if (!mounted || _userSearchQuery.trim() != trimmed) {
+          return;
+        }
+
+        setState(() {
+          _userSearchResults = users.where((PublicUser user) {
+            return user.id.isNotEmpty &&
+                user.id != currentUserId &&
+                !friendIds.contains(user.id);
+          }).toList();
+        });
+      } on AuthApiException catch (error) {
+        if (!mounted || _userSearchQuery.trim() != trimmed) {
+          return;
+        }
+
+        setState(() {
+          _userSearchResults = <PublicUser>[];
+          _serverError = error.message;
+        });
+      } catch (_) {
+        if (!mounted || _userSearchQuery.trim() != trimmed) {
+          return;
+        }
+
+        setState(() {
+          _userSearchResults = <PublicUser>[];
+          _serverError = 'Could not search users right now.';
+        });
+      } finally {
+        if (mounted && _userSearchQuery.trim() == trimmed) {
+          setState(() {
+            _isSearchingUsers = false;
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _followUser(PublicUser user) async {
+    setState(() {
+      _friendActionUserId = user.id;
+      _serverError = null;
+    });
+
+    try {
+      await AuthApi.followUser(user.id);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _friends = <FriendUser>[
+          FriendUser(
+            id: user.id,
+            username: user.username,
+            profileVisibility: user.profileVisibility,
+          ),
+          ..._friends,
+        ];
+        _userSearchResults = _userSearchResults
+            .where((PublicUser candidate) => candidate.id != user.id)
+            .toList();
+      });
+      _showSnackBar('Added ${user.username}.');
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = error.message;
+      });
+      _showSnackBar(error.message);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = 'Could not add friend right now.';
+      });
+      _showSnackBar('Could not add friend right now.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _friendActionUserId = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _unfollowUser(FriendUser user) async {
+    setState(() {
+      _friendActionUserId = user.id;
+      _serverError = null;
+    });
+
+    try {
+      await AuthApi.unfollowUser(user.id);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _friends = _friends
+            .where((FriendUser friend) => friend.id != user.id)
+            .toList();
+      });
+      _showSnackBar('Removed ${user.username}.');
+      if (_userSearchQuery.trim().length >= 2) {
+        await _searchUsers(_userSearchQuery);
+      }
+    } on AuthApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = error.message;
+      });
+      _showSnackBar(error.message);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _serverError = 'Could not remove friend right now.';
+      });
+      _showSnackBar('Could not remove friend right now.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _friendActionUserId = null;
+        });
+      }
+    }
+  }
+
   void _showSnackBar(String message) {
     if (!mounted) {
       return;
@@ -251,18 +418,6 @@ class _CurationPageState extends State<CurationPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _openMyWatchlist([
-    MyWatchlistView view = MyWatchlistView.all,
-  ]) async {
-    final bool? changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => MyWatchlistPage(view: view)),
-    );
-
-    if (changed == true) {
-      await _loadProfile();
-    }
   }
 
   Widget _buildProfileTopNav() {
@@ -288,17 +443,14 @@ class _CurationPageState extends State<CurationPage> {
               ),
             ),
             const SizedBox(width: 14),
-            TextButton(
-              onPressed: _openMyWatchlist,
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF374151),
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
+            const Text(
+              'My Profile',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+                color: Color(0xFF374151),
               ),
-              child: const Text('My Watchlist'),
             ),
           ],
         ),
@@ -419,10 +571,6 @@ class _CurationPageState extends State<CurationPage> {
   }
 
   Widget _buildProfilePage() {
-    final int wantToWatchCount = _countByStatus('plan_to_watch');
-    final int alreadyWatchedCount = _countByStatus('completed');
-    final int favoritesCount = _countFavorites();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       body: SafeArea(
@@ -489,7 +637,7 @@ class _CurationPageState extends State<CurationPage> {
               ),
               const SizedBox(height: 20),
               const Text(
-                'My Lists',
+                'Find People',
                 style: TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.w700,
@@ -497,47 +645,122 @@ class _CurationPageState extends State<CurationPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              _ProfileListCard(
-                title: 'Want to Watch',
-                subtitle: _formatTitleCount(wantToWatchCount),
-                accentGradient: const LinearGradient(
-                  colors: [Color(0xFFFBE2F0), Color(0xFFF5BDD9)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+              TextField(
+                onChanged: _searchUsers,
+                decoration: InputDecoration(
+                  hintText: 'Search users by username...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                  ),
                 ),
-                artIcon: Icons.circle,
-                artColor: const Color(0xFFE238A5),
-                onTap: () => _openMyWatchlist(MyWatchlistView.watchlist),
               ),
-              const SizedBox(height: 16),
-              _ProfileListCard(
-                title: 'Already Watched',
-                subtitle: _formatTitleCount(alreadyWatchedCount),
-                accentGradient: const LinearGradient(
-                  colors: [Color(0xFFDCE7F1), Color(0xFFB0D0BA)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+              if (_userSearchQuery.trim().isNotEmpty &&
+                  _userSearchQuery.trim().length < 2) ...[
+                const SizedBox(height: 10),
+                const Text(
+                  'Type at least 2 characters to search.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                artIcon: Icons.terrain,
-                artColor: const Color(0xFF355E72),
-                onTap: () => _openMyWatchlist(MyWatchlistView.watched),
-              ),
-              const SizedBox(height: 16),
-              _ProfileListCard(
-                title: 'Favorites',
-                subtitle: _formatTitleCount(favoritesCount),
-                accentGradient: const LinearGradient(
-                  colors: [Color(0xFFE0DEEE), Color(0xFFADC2F2)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                artIcon: Icons.change_history,
-                artColor: const Color(0xFF6A7FC9),
-                onTap: () => _openMyWatchlist(MyWatchlistView.favorites),
-              ),
-              if (_isProfileLoading) ...[
-                const SizedBox(height: 20),
+              ],
+              if (_isSearchingUsers) ...[
+                const SizedBox(height: 14),
                 const Center(child: CircularProgressIndicator()),
+              ],
+              if (_userSearchResults.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                ..._userSearchResults.map((PublicUser user) {
+                  final bool isSubmitting = _friendActionUserId == user.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _UserActionCard(
+                      username: user.username,
+                      profileVisibility: user.profileVisibility,
+                      actionLabel: isSubmitting ? 'Adding...' : 'Add',
+                      onAction: isSubmitting ? null : () => _followUser(user),
+                    ),
+                  );
+                }),
+              ] else if (!_isSearchingUsers &&
+                  _userSearchQuery.trim().length >= 2) ...[
+                const SizedBox(height: 10),
+                const Text(
+                  'No users found.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text(
+                    'Friends',
+                    style: TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  if (_friends.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE5E7EB),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${_friends.length}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_isProfileLoading) ...[
+                const Center(child: CircularProgressIndicator()),
+              ] else if (_friends.isEmpty) ...[
+                const Text(
+                  'You have not added any friends yet.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ] else ...[
+                ..._friends.map((FriendUser user) {
+                  final bool isSubmitting = _friendActionUserId == user.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _UserActionCard(
+                      username: user.username,
+                      profileVisibility: user.profileVisibility,
+                      actionLabel: isSubmitting ? 'Removing...' : 'Remove',
+                      onAction: isSubmitting ? null : () => _unfollowUser(user),
+                    ),
+                  );
+                }),
               ],
             ],
           ),
@@ -706,99 +929,91 @@ class _ProfileEditPageState extends State<_ProfileEditPage> {
   }
 }
 
-class _ProfileListCard extends StatelessWidget {
-  const _ProfileListCard({
-    required this.title,
-    required this.subtitle,
-    required this.accentGradient,
-    required this.artIcon,
-    required this.artColor,
-    this.onTap,
+class _UserActionCard extends StatelessWidget {
+  const _UserActionCard({
+    required this.username,
+    required this.profileVisibility,
+    required this.actionLabel,
+    this.onAction,
   });
 
-  final String title;
-  final String subtitle;
-  final Gradient accentGradient;
-  final IconData artIcon;
-  final Color artColor;
-  final VoidCallback? onTap;
+  final String username;
+  final String profileVisibility;
+  final String actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: double.infinity,
-          height: 318,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE9E9EC),
-            borderRadius: BorderRadius.circular(20),
+    final bool isPrivate = profileVisibility.trim().toLowerCase() == 'private';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF3F4F6),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              username.isNotEmpty ? username[0].toUpperCase() : '?',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+              ),
+            ),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 118),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF696969),
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
+                Text(
+                  username,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 104,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(gradient: accentGradient),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(artIcon, size: 66, color: artColor),
-                        const SizedBox(width: 14),
-                        Icon(
-                          artIcon,
-                          size: 46,
-                          color: artColor.withAlpha((0.75 * 255).round()),
-                        ),
-                        const SizedBox(width: 14),
-                        Icon(
-                          artIcon,
-                          size: 56,
-                          color: artColor.withAlpha((0.9 * 255).round()),
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  isPrivate ? 'Private profile' : 'Public profile',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF6B7280),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          const SizedBox(width: 12),
+          FilledButton(
+            onPressed: onAction,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF111827),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              actionLabel,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

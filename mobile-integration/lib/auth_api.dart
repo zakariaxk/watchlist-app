@@ -60,6 +60,46 @@ class FriendFeedItem {
   }
 }
 
+class PublicUser {
+  PublicUser({
+    required this.id,
+    required this.username,
+    required this.profileVisibility,
+  });
+
+  final String id;
+  final String username;
+  final String profileVisibility;
+
+  factory PublicUser.fromJson(Map<String, dynamic> json) {
+    return PublicUser(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      username: json['username']?.toString() ?? 'Unknown user',
+      profileVisibility: json['profileVisibility']?.toString() ?? 'public',
+    );
+  }
+}
+
+class FriendUser {
+  FriendUser({
+    required this.id,
+    required this.username,
+    required this.profileVisibility,
+  });
+
+  final String id;
+  final String username;
+  final String profileVisibility;
+
+  factory FriendUser.fromJson(Map<String, dynamic> json) {
+    return FriendUser(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      username: json['username']?.toString() ?? 'Unknown user',
+      profileVisibility: json['profileVisibility']?.toString() ?? 'public',
+    );
+  }
+}
+
 class RecommendedMovie {
   RecommendedMovie({
     required this.imdbID,
@@ -301,12 +341,17 @@ class AuthApi {
   static final Uri _genrePreferencesUri = Uri.parse(
     '$baseUrl/auth/profile/preferences',
   );
+  static final Uri _usersSearchUri = Uri.parse('$baseUrl/users/search');
   static final Uri _friendsFeedUri = Uri.parse('$baseUrl/feed/friends');
+  static final Uri _friendsUri = Uri.parse('$baseUrl/friends');
   static final Uri _mediaSearchUri = Uri.parse('$baseUrl/media/search');
   static final Uri _watchlistUri = Uri.parse('$baseUrl/watchlist');
 
   static Uri _watchlistItemUri(String id) =>
       Uri.parse('$baseUrl/watchlist/${Uri.encodeComponent(id)}');
+
+  static Uri _friendUri(String id) =>
+      Uri.parse('$baseUrl/friends/${Uri.encodeComponent(id)}');
 
   static Uri _mediaDetailUri(String imdbID) =>
       Uri.parse('$baseUrl/media/${Uri.encodeComponent(imdbID)}');
@@ -447,6 +492,161 @@ class AuthApi {
 
       final String backendMessage =
           payload['message']?.toString() ?? 'Failed to update profile.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<List<PublicUser>> searchUsers(String query) async {
+    final String trimmed = query.trim();
+    if (trimmed.length < 2) {
+      return <PublicUser>[];
+    }
+
+    try {
+      final Uri uri = _usersSearchUri.replace(
+        queryParameters: <String, String>{'query': trimmed},
+      );
+      final http.Response response = await http
+          .get(uri, headers: _headers())
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final dynamic usersPayload = payload['users'];
+        if (usersPayload is! List) {
+          return <PublicUser>[];
+        }
+
+        return usersPayload
+            .whereType<Map>()
+            .map(
+              (dynamic user) =>
+                  PublicUser.fromJson(Map<String, dynamic>.from(user as Map)),
+            )
+            .toList();
+      }
+
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to search users.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<List<FriendUser>> fetchFriends() async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to view your friends.');
+    }
+
+    try {
+      final http.Response response = await http
+          .get(_friendsUri, headers: _headers(token: token))
+          .timeout(const Duration(seconds: 15));
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (decoded is! List) {
+          return <FriendUser>[];
+        }
+
+        return decoded
+            .whereType<Map>()
+            .map(
+              (dynamic user) =>
+                  FriendUser.fromJson(Map<String, dynamic>.from(user as Map)),
+            )
+            .toList();
+      }
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to fetch friends.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<void> followUser(String friendId) async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to add friends.');
+    }
+
+    final String trimmed = friendId.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing friend id.');
+    }
+
+    try {
+      final http.Response response = await http
+          .post(_friendUri(trimmed), headers: _headers(token: token))
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      }
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to add friend.';
+      throw AuthApiException(backendMessage);
+    } on AuthApiException {
+      rethrow;
+    } on TimeoutException {
+      throw AuthApiException('Request timeout. Server is not responding.');
+    } catch (_) {
+      throw AuthApiException(
+        'Unable to connect to server. Please check your connection and try again.',
+      );
+    }
+  }
+
+  static Future<void> unfollowUser(String friendId) async {
+    final String? token = AuthSession.authToken;
+    if (token == null || token.isEmpty) {
+      throw AuthApiException('You must be logged in to update your friends.');
+    }
+
+    final String trimmed = friendId.trim();
+    if (trimmed.isEmpty) {
+      throw AuthApiException('Missing friend id.');
+    }
+
+    try {
+      final http.Response response = await http
+          .delete(_friendUri(trimmed), headers: _headers(token: token))
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      }
+
+      final Map<String, dynamic> payload = _decodeJson(response.body);
+      final String backendMessage =
+          payload['message']?.toString() ?? 'Failed to remove friend.';
       throw AuthApiException(backendMessage);
     } on AuthApiException {
       rethrow;
