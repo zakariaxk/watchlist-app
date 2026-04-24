@@ -161,12 +161,9 @@ In production, Express serves `client/dist`, exposes the API under `/api`, enfor
 
 - Media search quality is limited by OMDb and currently relies on exact or near-exact title matching.
 - Feed and watchlist metadata enrichment can add extra latency when cached title/poster data is missing.
-- Backend test coverage is lighter than frontend test coverage.
-- Email delivery depends on SMTP or SendGrid configuration; in development, links may be logged instead of sent.
 - The mobile client exists as a separate integration layer and is not packaged into the main web deployment.
 
 ## Future Improvements
 
-- Delete endpoint expansion for review and comment lifecycle management
-- Improved search with better ranking, filters, and fuzzy matching
+- Improved search with better ranking and filters
 - Data enrichment to reduce repeated OMDb lookups and provide richer cached metadata
