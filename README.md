@@ -4,7 +4,7 @@ WatchIt is a full-stack watchlist platform for tracking movies and TV shows, rev
 
 ## Live Demo
 
-[watch-it.xyz](https://watch-it.xyz)
+[http://watch-it.xyz](http://watch-it.xyz)
 
 ## Features
 
