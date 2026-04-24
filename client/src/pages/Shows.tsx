@@ -35,6 +35,7 @@ const SHOW_GENRE_SEEDS: Record<string, string[]> = {
   Superhero:   ['The Boys', 'Invincible', 'Daredevil', 'Loki', 'WandaVision', 'Peacemaker', 'The Umbrella Academy', 'Legion', 'Agents of Shield', 'Titans'],
 };
 
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 // One row for a single genre
 const GenreRow = ({
   genre,
