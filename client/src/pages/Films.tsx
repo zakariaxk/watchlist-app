@@ -35,6 +35,7 @@ const MOVIE_GENRE_SEEDS: Record<string, string[]> = {
   Superhero:   ['The Dark Knight', 'Spider-Man Into the Spider-Verse', 'Logan', 'Avengers Endgame', 'Thor Ragnarok', 'Black Panther', 'Guardians of the Galaxy', 'The Incredibles', 'Unbreakable', 'Shazam'],
 };
 
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 // One row for a single genre
 const GenreRow = ({
   genre,
@@ -57,19 +58,27 @@ const GenreRow = ({
     setLoading(true);
     try {
       const seeds = MOVIE_GENRE_SEEDS[genre] ?? [];
-      const responses = await Promise.allSettled(
-        seeds.map((title) => searchMedia(title, 'movie', 1))
-      );
       const fresh: OmdbSearchResult[] = [];
-      for (const r of responses) {
-        if (r.status !== 'fulfilled') continue;
-        for (const item of r.value.data.results) {
-          if (item.type === 'game') continue;
-          if (seenIds.current.has(item.imdbID)) continue;
-          seenIds.current.add(item.imdbID);
-          fresh.push(item);
-          break; // only take the first result per seed title
+      const BATCH_SIZE = 3;
+      const DELAY_MS = 300;
+
+      for (let i = 0; i < seeds.length; i += BATCH_SIZE) {
+        const batch = seeds.slice(i, i + BATCH_SIZE);
+        const responses = await Promise.allSettled(
+          batch.map((title) => searchMedia(title, 'movie', 1))
+        );
+        for (const r of responses) {
+          if (r.status !== 'fulfilled') continue;
+          for (const item of r.value.data.results) {
+            if (item.type === 'game') continue;
+            if (item.type === 'series') continue;
+            if (seenIds.current.has(item.imdbID)) continue;
+            seenIds.current.add(item.imdbID);
+            fresh.push(item);
+            break;
+          }
         }
+        if (i + BATCH_SIZE < seeds.length) await sleep(DELAY_MS);
       }
       setResults(fresh);
     } catch {
