@@ -20,6 +20,21 @@ const SHOW_GENRES = [
   { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
 ];
 
+const SHOW_GENRE_SEEDS: Record<string, string[]> = {
+  Action:      ['24', 'Reacher', 'Jack Ryan', 'Strike Back', 'The Boys', 'Narcos', 'Prison Break', 'Alias', 'Burn Notice', 'Chuck'],
+  Comedy:      ['Seinfeld', 'The Office', 'Parks and Recreation', 'Arrested Development', 'Brooklyn Nine-Nine', 'Schitts Creek', 'Its Always Sunny', 'Frasier', 'Curb Your Enthusiasm', 'What We Do in the Shadows'],
+  Drama:       ['The Wire', 'Succession', 'Ozark', 'The Crown', 'Yellowstone', 'Mindhunter', 'Mare of Easttown', 'Severance', 'Better Call Saul', 'The Americans'],
+  'Sci-Fi':    ['Westworld', 'Dark', 'Black Mirror', 'The Expanse', 'Fringe', 'Altered Carbon', 'Orphan Black', 'Battlestar Galactica', 'Devs', 'Severance'],
+  Romance:     ['Bridgerton', 'Normal People', 'Virgin River', 'Emily in Paris', 'Outlander', 'Jane the Virgin', 'Fleabag', 'Sweet Magnolias', 'Ginny and Georgia', 'One Day'],
+  Documentary: ['Making a Murderer', 'The Last Dance', 'Wild Wild Country', 'Tiger King', 'The Jinx', 'Chefs Table', 'Icarus', 'Allen v Farrow', 'The Vow', 'Formula 1: Drive to Survive'],
+  Thriller:    ['Mindhunter', 'Killing Eve', 'Hannibal', 'The Sinner', 'Sharp Objects', 'You', 'Bloodline', 'Ozark', 'The Fall', 'Luther'],
+  Horror:      ['The Haunting of Hill House', 'Stranger Things', 'American Horror Story', 'The Walking Dead', 'Midnight Mass', 'Ratched', 'Channel Zero', 'Marianne', 'The Terror', 'Debris'],
+  Animation:   ['Arcane', 'Avatar The Last Airbender', 'BoJack Horseman', 'Rick and Morty', 'Gravity Falls', 'Castlevania', 'Invincible', 'Over the Garden Wall', 'Primal', 'The Legend of Korra'],
+  Crime:       ['The Wire', 'True Detective', 'Fargo', 'Narcos', 'Peaky Blinders', 'The Sopranos', 'Mindhunter', 'The Shield', 'Ozark', 'Sneaky Pete'],
+  Fantasy:     ['Game of Thrones', 'The Witcher', 'House of the Dragon', 'Shadow and Bone', 'The Wheel of Time', 'Merlin', 'His Dark Materials', 'Carnival Row', 'Cursed', 'The Shannara Chronicles'],
+  Superhero:   ['The Boys', 'Invincible', 'Daredevil', 'Loki', 'WandaVision', 'Peacemaker', 'The Umbrella Academy', 'Legion', 'Agents of Shield', 'Titans'],
+};
+
 // One row for a single genre
 const GenreRow = ({
   genre,
@@ -38,25 +53,33 @@ const GenreRow = ({
   const seenIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await searchMedia(genre, 'series', 1);
-        const fresh = res.data.results.filter((item: OmdbSearchResult) => {
-          if (item.type === 'game') return false;
-          if (seenIds.current.has(item.imdbID)) return false;
+  const load = async () => {
+    setLoading(true);
+    try {
+      const seeds = SHOW_GENRE_SEEDS[genre] ?? [];
+      const responses = await Promise.allSettled(
+        seeds.map((title) => searchMedia(title, 'series', 1))
+      );
+      const fresh: OmdbSearchResult[] = [];
+      for (const r of responses) {
+        if (r.status !== 'fulfilled') continue;
+        for (const item of r.value.data.results) {
+          if (item.type === 'game') continue;
+          if (seenIds.current.has(item.imdbID)) continue;
           seenIds.current.add(item.imdbID);
-          return true;
-        });
-        setResults(fresh);
-      } catch {
-        setError('Failed to load.');
-      } finally {
-        setLoading(false);
+          fresh.push(item);
+          break; // only take the first result per seed title
+        }
       }
-    };
-    load();
-  }, [genre]);
+      setResults(fresh);
+    } catch {
+      setError('Failed to load.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  load();
+}, [genre]);
 
   return (
     <section className="genre-row">

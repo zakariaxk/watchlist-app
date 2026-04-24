@@ -20,6 +20,21 @@ const FILM_GENRES = [
   { label: 'Superhero',   gradient: 'linear-gradient(135deg, #c3cfe2 0%, #c5b4e3 40%, #f0c27f 100%)' },
 ];
 
+const MOVIE_GENRE_SEEDS: Record<string, string[]> = {
+  Action:      ['Mad Max Fury Road', 'John Wick', 'The Dark Knight', 'Mission Impossible Fallout', 'Die Hard', 'Heat', 'Gladiator', 'Top Gun Maverick', 'The Raid', 'Atomic Blonde'],
+  Comedy:      ['Superbad', 'The Grand Budapest Hotel', 'Bridesmaids', 'Game Night', 'Step Brothers', 'The Nice Guys', 'Knives Out', 'What We Do in the Shadows', 'Palm Springs', 'Ticket to Paradise'],
+  Drama:       ['The Shawshank Redemption', 'Schindlers List', 'There Will Be Blood', 'No Country for Old Men', 'Moonlight', 'Marriage Story', 'Manchester by the Sea', 'The Godfather', 'Nomadland', 'Parasite'],
+  'Sci-Fi':    ['Interstellar', 'Inception', 'The Matrix', 'Arrival', 'Blade Runner 2049', 'Ex Machina', 'Dune', 'Annihilation', 'Edge of Tomorrow', 'District 9'],
+  Romance:     ['La La Land', 'About Time', 'Crazy Rich Asians', 'The Notebook', 'Before Sunrise', 'Eternal Sunshine of the Spotless Mind', 'Pride and Prejudice', 'Call Me By Your Name', 'Portrait of a Lady on Fire', 'Atonement'],
+  Documentary: ['No Other Land', 'Free Solo', 'The Act of Killing', '13th', 'Amy', 'Searching for Sugar Man', 'I Am Not Your Negro', 'Jiro Dreams of Sushi', 'The Imposter', 'Honeyland'],
+  Thriller:    ['Gone Girl', 'Prisoners', 'Zodiac', 'Se7en', 'Parasite', 'Nocturnal Animals', 'Knives Out', 'The Girl with the Dragon Tattoo', 'Sicario', 'Tinker Tailor Soldier Spy'],
+  Horror:      ['Hereditary', 'Get Out', 'The Witch', 'Midsommar', 'A Quiet Place', 'It Follows', 'The Babadook', 'Us', 'Sinister', 'The Conjuring'],
+  Animation:   ['Spider-Man Into the Spider-Verse', 'Spirited Away', 'The Lion King', 'WALL-E', 'Coco', 'Princess Mononoke', 'Toy Story', 'Howls Moving Castle', 'Klaus', 'Wolfwalkers'],
+  Crime:       ['The Godfather', 'Goodfellas', 'Heat', 'No Country for Old Men', 'Prisoners', 'Zodiac', 'The Departed', 'Sicario', 'Blood Simple', 'Memories of Murder'],
+  Fantasy:     ['The Lord of the Rings', 'Pan Labyrinth', 'Princess Mononoke', 'The Shape of Water', 'Stardust', 'Big Fish', 'The Princess Bride', 'Willow', 'Labyrinth', 'The NeverEnding Story'],
+  Superhero:   ['The Dark Knight', 'Spider-Man Into the Spider-Verse', 'Logan', 'Avengers Endgame', 'Thor Ragnarok', 'Black Panther', 'Guardians of the Galaxy', 'The Incredibles', 'Unbreakable', 'Shazam'],
+};
+
 // One row for a single genre
 const GenreRow = ({
   genre,
@@ -38,25 +53,33 @@ const GenreRow = ({
   const seenIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await searchMedia(genre, 'movie', 1);
-        const fresh = res.data.results.filter((item: OmdbSearchResult) => {
-          if (item.type === 'game') return false;
-          if (seenIds.current.has(item.imdbID)) return false;
+  const load = async () => {
+    setLoading(true);
+    try {
+      const seeds = MOVIE_GENRE_SEEDS[genre] ?? [];
+      const responses = await Promise.allSettled(
+        seeds.map((title) => searchMedia(title, 'series', 1))
+      );
+      const fresh: OmdbSearchResult[] = [];
+      for (const r of responses) {
+        if (r.status !== 'fulfilled') continue;
+        for (const item of r.value.data.results) {
+          if (item.type === 'game') continue;
+          if (seenIds.current.has(item.imdbID)) continue;
           seenIds.current.add(item.imdbID);
-          return true;
-        });
-        setResults(fresh);
-      } catch {
-        setError('Failed to load.');
-      } finally {
-        setLoading(false);
+          fresh.push(item);
+          break; // only take the first result per seed title
+        }
       }
-    };
-    load();
-  }, [genre]);
+      setResults(fresh);
+    } catch {
+      setError('Failed to load.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  load();
+}, [genre]);
 
   return (
     <section className="genre-row">
