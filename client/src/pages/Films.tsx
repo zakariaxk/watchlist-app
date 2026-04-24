@@ -58,7 +58,7 @@ const GenreRow = ({
     try {
       const seeds = MOVIE_GENRE_SEEDS[genre] ?? [];
       const responses = await Promise.allSettled(
-        seeds.map((title) => searchMedia(title, 'series', 1))
+        seeds.map((title) => searchMedia(title, 'movie', 1))
       );
       const fresh: OmdbSearchResult[] = [];
       for (const r of responses) {
