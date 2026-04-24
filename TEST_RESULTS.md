@@ -14,7 +14,7 @@ If you want to run only the 2 integration tests:
 npm --prefix client run test -- src/tests/integration.test.tsx
 ```
 
-## Terminal Output (Screenshot Ready)
+## Terminal Output
 
 ```text
 > watchlist-app-client@0.1.0 test
@@ -50,7 +50,7 @@ npm --prefix client run test -- src/tests/integration.test.tsx
    Duration  2.20s (transform 105ms, setup 0ms, collect 284ms, tests 1.15s, environment 1.01s, prepare 129ms)
 ```
 
-## Presentation Summary
+## Summary
 
 - What was tested:
   - Integration flow 1: search input -> API mock call -> results rendered
