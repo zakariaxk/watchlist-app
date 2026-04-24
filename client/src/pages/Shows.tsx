@@ -59,8 +59,19 @@ const setCached = (key: string, data: OmdbSearchResult[]) => {
     // localStorage full or unavailable — fail silently
   }
 };
-
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+const fetchWithRetry = async (title: string, type: 'movie' | 'series', retries = 3, delay = 500) => {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const res = await searchMedia(title, type, 1);
+      return res;
+    } catch {
+      if (attempt < retries - 1) await sleep(delay * (attempt + 1));
+    }
+  }
+  return null;
+};
+
 // One row for a single genre
 const GenreRow = ({
   genre,
