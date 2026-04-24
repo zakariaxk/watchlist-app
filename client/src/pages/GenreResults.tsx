@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchMedia, addToWatchlist, OmdbSearchResult } from '../api/mediaApi';
+import { filterMediaByGenre } from '../utils/genreUtils';
 import { AuthContext } from '../context/AuthContext';
 import MediaCard from '../components/MediaCard';
 import '../styles/pages.css';
@@ -31,15 +32,16 @@ const GenreResults = () => {
     try {
       const mediaType = type === 'series' ? 'series' : 'movie';
       const res = await searchMedia(genre, mediaType, pageNum);
-      // Filter out games, then deduplicate by imdbID
+      // Filter out games, then deduplicate by imdbID, then keep only actual genre matches.
       const fresh = res.data.results.filter((item) => {
         if (item.type === 'game') return false;
         if (seenIds.current.has(item.imdbID)) return false;
         seenIds.current.add(item.imdbID);
         return true;
       });
-      if (fresh.length === 0) setHasMore(false);
-      setResults((prev) => (append ? [...prev, ...fresh] : fresh));
+      const genreFiltered = await filterMediaByGenre(fresh, genre);
+      if (genreFiltered.length === 0) setHasMore(false);
+      setResults((prev) => (append ? [...prev, ...genreFiltered] : genreFiltered));
     } catch {
       if (!append) setError('Failed to load results.');
       setHasMore(false);

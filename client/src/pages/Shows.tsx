@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchMedia, addToWatchlist, OmdbSearchResult } from '../api/mediaApi';
+import { filterMediaByGenre } from '../utils/genreUtils';
 import { AuthContext } from '../context/AuthContext';
 import MediaCard from '../components/MediaCard';
 import '../styles/pages.css';
@@ -48,7 +49,8 @@ const GenreRow = ({
           seenIds.current.add(item.imdbID);
           return true;
         });
-        setResults(fresh);
+        const genreFiltered = await filterMediaByGenre(fresh, genre);
+        setResults(genreFiltered);
       } catch {
         setError('Failed to load.');
       } finally {
