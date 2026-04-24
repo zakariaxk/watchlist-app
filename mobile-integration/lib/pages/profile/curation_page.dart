@@ -87,7 +87,12 @@ class _CurationPageState extends State<CurationPage> {
         return;
       }
 
-      Navigator.of(context).pushNamedAndRemoveUntil('/feed', (route) => false);
+      if (widget.saveOnNext) {
+        AuthSession.clear();
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      } else {
+        Navigator.of(context).pushNamedAndRemoveUntil('/feed', (route) => false);
+      }
     } on AuthApiException catch (error) {
       if (!mounted) {
         return;
