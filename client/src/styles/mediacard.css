@@ -9,6 +9,8 @@
   border-radius: 8px;
   border: 1px solid #ebebeb;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }
@@ -47,13 +49,16 @@
 }
 
 .media-info {
+  flex: 1;
   padding: 13px 14px 14px;
+  display: flex;
+  flex-direction: column;
 }
 
 .media-info h3 {
   font-size: 15px;
+  margin-bottom: 8px;
   font-weight: 600;
-  margin-bottom: 4px;
   line-height: 1.3;
   color: #1a1a1a;
 }
@@ -117,124 +122,4 @@
   font-size: 12px;
   color: #555;
   margin-top: 6px;
-}
-
-
-.media-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.media-poster {
-  width: 100%;
-  height: 250px;
-  background-color: #e9ecef;
-  overflow: hidden;
-}
-
-.media-poster img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.placeholder-poster {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #e9ecef;
-  color: #999;
-  font-size: 14px;
-}
-
-.media-info {
-  padding: 15px;
-}
-
-.media-info h3 {
-  font-size: 16px;
-  margin-bottom: 8px;
-  line-height: 1.3;
-}
-
-.media-type {
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 4px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.media-year {
-  font-size: 12px;
-  color: #999;
-  margin-bottom: 6px;
-}
-
-.media-genres {
-  font-size: 12px;
-  color: #777;
-  margin-bottom: 12px;
-  line-height: 1.4;
-}
-
-.card-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.details-btn {
-  flex: 1;
-  background-color: #007bff;
-  color: white;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.details-btn:hover {
-  background-color: #0056b3;
-}
-
-.watchlist-btn {
-  background-color: #28a745;
-  color: white;
-  padding: 10px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.watchlist-btn:hover {
-  background-color: #1e7e34;
-}
-
-.watchlist-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.card-feedback {
-  font-size: 12px;
-  color: #28a745;
-  margin-top: 6px;
-}
-
-.genre-card-art {
-  width: 150px;
-  height: 150px;
-  overflow: hidden;
-  border-radius: 8px;
-}
-
-.genre-grid {
-  margin-left: 25px;
-  margin-right: 25px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 columns */
-  grid-template-rows: repeat(4, 1fr);    /* optional: 4 rows */
-  gap: 16px; /* spacing between cards */
 }
